@@ -1,0 +1,1735 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Prestasi — Unit Elektrik JPPF</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --bg-primary:#0b0e1a;--bg-secondary:#111827;--bg-card:#161d2e;--bg-hover:#1e2640;
+  --accent-blue:#3b82f6;--accent-teal:#14b8a6;--accent-amber:#f59e0b;--accent-rose:#f43f5e;
+  --accent-purple:#8b5cf6;--accent-green:#22c55e;--accent-cyan:#06b6d4;--accent-orange:#f97316;
+  --text-primary:#f1f5f9;--text-secondary:#94a3b8;--text-muted:#4b5563;
+  --border:#1e2a42;--border-light:#2d3d5e;
+  --sidebar-w:248px;--header-h:62px;
+  --shadow:0 8px 32px rgba(0,0,0,0.5);
+  --radius:14px;--radius-sm:9px;
+}
+.light-mode{
+  --bg-primary:#eef1f8;--bg-secondary:#e2e7f4;--bg-card:#ffffff;--bg-hover:#dde3f4;
+  --text-primary:#0f172a;--text-secondary:#475569;--text-muted:#94a3b8;
+  --border:#d1d9ee;--border-light:#c2ccdf;
+  --shadow:0 4px 24px rgba(0,0,0,0.1);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg-primary);color:var(--text-primary);min-height:100vh;overflow-x:hidden;transition:background .3s,color .3s;}
+
+/* HEADER */
+#app-header{position:fixed;top:0;left:0;right:0;height:var(--header-h);background:var(--bg-secondary);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:200;box-shadow:var(--shadow);}
+.header-left{display:flex;align-items:center;gap:14px;}
+.logo-wrap{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#2563eb,#0891b2);display:flex;align-items:center;justify-content:center;font-size:17px;color:#fff;box-shadow:0 0 16px rgba(59,130,246,.4);}
+.app-title{font-size:15px;font-weight:800;color:var(--text-primary);letter-spacing:-.2px;}
+.app-subtitle{font-size:11px;color:var(--text-secondary);}
+.header-right{display:flex;align-items:center;gap:6px;}
+.hdr-btn{width:36px;height:36px;border-radius:9px;background:transparent;border:1px solid var(--border);color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .2s;position:relative;}
+.hdr-btn:hover{background:var(--bg-hover);color:var(--text-primary);border-color:var(--border-light);}
+.hdr-btn .tooltip{position:absolute;bottom:-32px;left:50%;transform:translateX(-50%);background:var(--bg-card);border:1px solid var(--border-light);color:var(--text-primary);font-size:11px;padding:3px 8px;border-radius:5px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .15s;}
+.hdr-btn:hover .tooltip{opacity:1;}
+.sync-indicator{display:flex;align-items:center;gap:6px;padding:5px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:20px;font-size:12px;font-weight:600;color:var(--text-secondary);cursor:pointer;transition:all .2s;}
+.sync-indicator:hover{border-color:var(--accent-blue);color:var(--accent-blue);}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--text-muted);}
+.sync-dot.connected{background:var(--accent-green);box-shadow:0 0 6px var(--accent-green);}
+.sync-dot.syncing{background:var(--accent-amber);animation:pulse 1s infinite;}
+.sync-dot.error{background:var(--accent-rose);}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.user-chip{display:flex;align-items:center;gap:8px;padding:4px 10px;background:var(--bg-card);border:1px solid var(--border);border-radius:20px;}
+.user-avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--accent-blue),var(--accent-purple));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;}
+.user-name{font-size:12px;font-weight:600;color:var(--text-primary);}
+
+/* LAYOUT */
+#layout{display:flex;margin-top:var(--header-h);min-height:calc(100vh - var(--header-h));}
+
+/* SIDEBAR */
+#sidebar{width:var(--sidebar-w);min-height:100%;background:var(--bg-secondary);border-right:1px solid var(--border);position:fixed;top:var(--header-h);left:0;bottom:0;transition:width .3s ease;overflow:hidden;z-index:150;display:flex;flex-direction:column;}
+#sidebar.collapsed{width:58px;}
+.sidebar-top{padding:16px 10px 8px;}
+.sidebar-section-label{font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;padding:0 9px;margin-bottom:5px;white-space:nowrap;opacity:1;transition:opacity .2s;}
+#sidebar.collapsed .sidebar-section-label{opacity:0;}
+.nav-item{display:flex;align-items:center;gap:11px;padding:10px 11px;border-radius:var(--radius-sm);cursor:pointer;transition:all .2s;color:var(--text-secondary);font-size:13px;font-weight:600;white-space:nowrap;position:relative;margin-bottom:2px;}
+.nav-item:hover{background:var(--bg-hover);color:var(--text-primary);}
+.nav-item.active{background:rgba(59,130,246,.13);color:var(--accent-blue);}
+.nav-item.active .nav-icon-wrap{background:rgba(59,130,246,.2);color:var(--accent-blue);}
+.nav-icon-wrap{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;background:transparent;transition:background .2s;}
+.nav-item:hover .nav-icon-wrap{background:var(--bg-hover);}
+.nav-text{transition:opacity .15s;flex:1;}
+#sidebar.collapsed .nav-text{opacity:0;width:0;overflow:hidden;}
+.nav-badge{background:var(--accent-rose);color:#fff;font-size:9px;font-weight:700;padding:2px 5px;border-radius:8px;margin-left:auto;}
+#sidebar.collapsed .nav-badge{display:none;}
+.sidebar-divider{height:1px;background:var(--border);margin:6px 10px;}
+.sidebar-bottom{padding:10px;border-top:1px solid var(--border);margin-top:auto;}
+.sidebar-toggle-btn{width:100%;padding:8px;border-radius:var(--radius-sm);background:transparent;border:1px solid var(--border);color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;font-size:12px;font-weight:600;transition:all .2s;font-family:inherit;}
+.sidebar-toggle-btn:hover{background:var(--bg-hover);color:var(--text-primary);}
+#sidebar.collapsed .sidebar-toggle-btn span{display:none;}
+#sidebar.collapsed .nav-item::after{content:attr(data-tip);position:absolute;left:62px;top:50%;transform:translateY(-50%);background:var(--bg-card);border:1px solid var(--border-light);color:var(--text-primary);font-size:12px;font-weight:600;padding:5px 10px;border-radius:7px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .15s;box-shadow:var(--shadow);z-index:300;}
+#sidebar.collapsed .nav-item:hover::after{opacity:1;}
+
+/* MAIN */
+#main-content{margin-left:var(--sidebar-w);flex:1;padding:26px;transition:margin-left .3s;min-width:0;}
+#sidebar.collapsed ~ #main-content{margin-left:58px;}
+.page{display:none;}.page.active{display:block;}
+
+/* PAGE HEADER */
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:12px;}
+.page-title-wrap{}
+.page-title{font-size:22px;font-weight:800;color:var(--text-primary);letter-spacing:-.4px;}
+.page-subtitle{font-size:13px;color:var(--text-secondary);margin-top:3px;display:flex;align-items:center;gap:8px;}
+.breadcrumb-sep{color:var(--text-muted);}
+.page-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+
+/* BUTTONS */
+.btn{padding:8px 16px;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;border:none;display:inline-flex;align-items:center;gap:7px;transition:all .2s;font-family:inherit;letter-spacing:-.1px;}
+.btn i{font-size:13px;}
+.btn-primary{background:var(--accent-blue);color:#fff;}
+.btn-primary:hover{background:#2563eb;transform:translateY(-1px);}
+.btn-success{background:var(--accent-green);color:#fff;}
+.btn-success:hover{background:#16a34a;}
+.btn-teal{background:var(--accent-teal);color:#fff;}
+.btn-teal:hover{background:#0d9488;}
+.btn-warning{background:var(--accent-amber);color:#1a1a1a;}
+.btn-danger{background:var(--accent-rose);color:#fff;}
+.btn-danger:hover{background:#e11d48;}
+.btn-outline{background:transparent;color:var(--text-secondary);border:1px solid var(--border-light);}
+.btn-outline:hover{background:var(--bg-hover);color:var(--text-primary);}
+.btn-sm{padding:6px 12px;font-size:12px;}
+.btn-xs{padding:4px 9px;font-size:11px;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+
+/* SYNC BUTTON */
+.btn-sync{background:linear-gradient(135deg,#059669,#0284c7);color:#fff;}
+.btn-sync:hover{background:linear-gradient(135deg,#047857,#0369a1);transform:translateY(-1px);}
+.btn-sync.syncing i{animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* FILTERS */
+.filters-bar{display:flex;gap:10px;flex-wrap:wrap;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:18px;align-items:flex-end;}
+.filter-group{display:flex;flex-direction:column;gap:4px;min-width:110px;}
+.filter-label{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;display:flex;align-items:center;gap:5px;}
+.filter-label i{font-size:11px;}
+.fc{padding:8px 11px;border-radius:var(--radius-sm);background:var(--bg-secondary);border:1px solid var(--border);color:var(--text-primary);font-size:13px;font-family:inherit;cursor:pointer;transition:border .2s;min-width:110px;}
+.fc:focus{outline:none;border-color:var(--accent-blue);}
+input.fc{min-width:160px;}
+
+/* METRICS */
+.metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:13px;margin-bottom:18px;}
+.metric-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;transition:all .2s;position:relative;overflow:hidden;}
+.metric-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--radius) var(--radius) 0 0;}
+.mc-blue::before{background:linear-gradient(90deg,var(--accent-blue),var(--accent-cyan));}
+.mc-green::before{background:linear-gradient(90deg,var(--accent-green),var(--accent-teal));}
+.mc-rose::before{background:linear-gradient(90deg,var(--accent-rose),var(--accent-orange));}
+.mc-amber::before{background:linear-gradient(90deg,var(--accent-amber),var(--accent-orange));}
+.mc-purple::before{background:linear-gradient(90deg,var(--accent-purple),var(--accent-blue));}
+.mc-teal::before{background:linear-gradient(90deg,var(--accent-teal),var(--accent-cyan));}
+.metric-card:hover{border-color:var(--border-light);transform:translateY(-2px);box-shadow:var(--shadow);}
+.metric-icon-wrap{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:10px;}
+.mi-blue{background:rgba(59,130,246,.15);color:var(--accent-blue);}
+.mi-green{background:rgba(34,197,94,.15);color:var(--accent-green);}
+.mi-rose{background:rgba(244,63,94,.15);color:var(--accent-rose);}
+.mi-amber{background:rgba(245,158,11,.15);color:var(--accent-amber);}
+.mi-purple{background:rgba(139,92,246,.15);color:var(--accent-purple);}
+.mi-teal{background:rgba(20,184,166,.15);color:var(--accent-teal);}
+.mi-cyan{background:rgba(6,182,212,.15);color:var(--accent-cyan);}
+.metric-value{font-size:27px;font-weight:800;color:var(--text-primary);font-family:'JetBrains Mono',monospace;letter-spacing:-1px;}
+.metric-label{font-size:12px;color:var(--text-secondary);margin-top:3px;font-weight:600;}
+.metric-sub{font-size:11px;color:var(--text-muted);margin-top:4px;}
+.prog-bar{height:5px;background:var(--bg-secondary);border-radius:3px;overflow:hidden;margin-top:8px;}
+.prog-fill{height:100%;border-radius:3px;transition:width .6s ease;}
+.pf-green{background:linear-gradient(90deg,var(--accent-teal),var(--accent-green));}
+.pf-rose{background:linear-gradient(90deg,var(--accent-rose),var(--accent-amber));}
+.pf-blue{background:linear-gradient(90deg,var(--accent-blue),var(--accent-cyan));}
+
+/* CHARTS */
+.charts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:16px;margin-bottom:18px;}
+.chart-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;}
+.chart-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;}
+.chart-title{font-size:14px;font-weight:700;color:var(--text-primary);}
+.chart-sub{font-size:11px;color:var(--text-muted);margin-top:2px;}
+.chart-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;}
+
+/* TABLE */
+.table-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:18px;}
+.table-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:10px;}
+.table-title{font-size:14px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:8px;}
+.table-search{padding:7px 12px 7px 32px;border-radius:var(--radius-sm);background:var(--bg-secondary);border:1px solid var(--border);color:var(--text-primary);font-size:13px;font-family:inherit;width:210px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:10px center;}
+.table-search:focus{outline:none;border-color:var(--accent-blue);}
+.data-table{width:100%;border-collapse:collapse;font-size:13px;}
+.data-table th{background:var(--bg-secondary);padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid var(--border);white-space:nowrap;}
+.data-table th i{margin-right:5px;font-size:11px;}
+.data-table td{padding:11px 14px;border-bottom:1px solid var(--border);color:var(--text-primary);vertical-align:middle;}
+.data-table tr:last-child td{border-bottom:none;}
+.data-table tr:hover td{background:var(--bg-hover);}
+.tbl-overflow{overflow-x:auto;}
+.tbl-overflow table{min-width:560px;}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;}
+.badge i{font-size:10px;}
+.bdg-green{background:rgba(34,197,94,.15);color:var(--accent-green);}
+.bdg-rose{background:rgba(244,63,94,.15);color:var(--accent-rose);}
+.bdg-blue{background:rgba(59,130,246,.15);color:var(--accent-blue);}
+.bdg-amber{background:rgba(245,158,11,.15);color:var(--accent-amber);}
+.bdg-purple{background:rgba(139,92,246,.15);color:var(--accent-purple);}
+.bdg-teal{background:rgba(20,184,166,.15);color:var(--accent-teal);}
+.bdg-gray{background:rgba(100,116,139,.15);color:var(--text-secondary);}
+.row-actions{display:flex;gap:5px;}
+.act-btn{width:29px;height:29px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .2s;}
+.act-btn.edit:hover{background:rgba(59,130,246,.15);color:var(--accent-blue);border-color:var(--accent-blue);}
+.act-btn.del:hover{background:rgba(244,63,94,.15);color:var(--accent-rose);border-color:var(--accent-rose);}
+.act-btn.sync-row:hover{background:rgba(34,197,94,.15);color:var(--accent-green);border-color:var(--accent-green);}
+.row-synced{position:relative;}
+.row-synced::after{content:'✓';position:absolute;top:-4px;right:-4px;background:var(--accent-green);color:#fff;font-size:8px;width:12px;height:12px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;}
+.empty-row td{text-align:center;padding:48px;color:var(--text-muted);}
+.empty-icon{font-size:32px;margin-bottom:10px;opacity:.4;}
+.count-chip{background:var(--accent-blue);color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;}
+
+/* YEAR PILLS */
+.year-pills{display:flex;gap:6px;flex-wrap:wrap;}
+.year-pill{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;background:var(--bg-card);border:1px solid var(--border);color:var(--text-secondary);}
+.year-pill.active{background:var(--accent-blue);color:#fff;border-color:var(--accent-blue);box-shadow:0 0 12px rgba(59,130,246,.4);}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(3px);}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--bg-card);border:1px solid var(--border-light);border-radius:18px;padding:28px;min-width:370px;max-width:500px;width:92%;box-shadow:0 24px 64px rgba(0,0,0,.6);animation:modalIn .2s ease;}
+@keyframes modalIn{from{transform:scale(.96);opacity:0}to{transform:scale(1);opacity:1}}
+.modal-header{display:flex;align-items:center;gap:12px;margin-bottom:22px;}
+.modal-icon{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:17px;}
+.mi-edit{background:rgba(59,130,246,.15);color:var(--accent-blue);}
+.mi-delete{background:rgba(244,63,94,.15);color:var(--accent-rose);}
+.mi-add{background:rgba(34,197,94,.15);color:var(--accent-green);}
+.mi-sheet{background:rgba(20,184,166,.15);color:var(--accent-teal);}
+.modal-title{font-size:17px;font-weight:800;color:var(--text-primary);}
+.modal-subtitle{font-size:12px;color:var(--text-secondary);}
+.form-group{margin-bottom:13px;}
+.form-label{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px;}
+.form-label i{font-size:11px;color:var(--text-muted);}
+.form-control{width:100%;padding:9px 12px;border-radius:var(--radius-sm);background:var(--bg-secondary);border:1px solid var(--border);color:var(--text-primary);font-size:13px;font-family:inherit;transition:border .2s;}
+.form-control:focus{outline:none;border-color:var(--accent-blue);}
+.form-control[readonly]{opacity:.6;cursor:not-allowed;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px;}
+.auto-calc-note{font-size:11px;color:var(--accent-teal);display:flex;align-items:center;gap:5px;margin-top:4px;}
+
+/* TOAST */
+#toast-stack{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;}
+.toast-item{background:var(--bg-card);border:1px solid var(--border-light);border-radius:11px;padding:12px 18px;font-size:13px;color:var(--text-primary);box-shadow:var(--shadow);display:flex;align-items:center;gap:10px;min-width:240px;animation:toastIn .25s ease;transition:opacity .3s;}
+@keyframes toastIn{from{transform:translateX(40px);opacity:0}to{transform:translateX(0);opacity:1}}
+.toast-item.removing{opacity:0;transform:translateX(40px);}
+.toast-success{border-left:3px solid var(--accent-green);}
+.toast-error{border-left:3px solid var(--accent-rose);}
+.toast-info{border-left:3px solid var(--accent-blue);}
+.toast-warning{border-left:3px solid var(--accent-amber);}
+
+/* SETTINGS */
+.settings-section{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:14px;}
+.settings-section-title{font-size:15px;font-weight:800;color:var(--text-primary);margin-bottom:18px;display:flex;align-items:center;gap:10px;}
+.settings-section-title .s-icon{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:14px;}
+
+/* SHEET CONFIG */
+.sheet-config-card{background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;margin-bottom:10px;transition:border .2s;}
+.sheet-config-card.connected{border-color:rgba(34,197,94,.4);}
+.sheet-config-card.error{border-color:rgba(244,63,94,.4);}
+.scc-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.scc-title{font-size:13px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:8px;}
+.scc-status{font-size:11px;font-weight:600;display:flex;align-items:center;gap:5px;}
+.scc-url-row{display:flex;gap:8px;align-items:center;}
+.scc-url-input{flex:1;}
+.scc-note{font-size:11px;color:var(--text-muted);margin-top:6px;line-height:1.5;}
+
+/* RANKING */
+.rank-item{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);}
+.rank-item:last-child{border-bottom:none;}
+.rank-num{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;}
+.rank-name{flex:1;font-size:12px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rank-bar-wrap{flex:1;display:flex;align-items:center;gap:6px;}
+.rank-pct{font-size:12px;font-weight:700;min-width:34px;text-align:right;}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border-light);border-radius:3px;}
+
+/* GUIDE */
+.guide-step{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--border);}
+.guide-step:last-child{border-bottom:none;}
+.guide-num{width:28px;height:28px;border-radius:50%;background:var(--accent-blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;margin-top:1px;}
+.guide-content{flex:1;}
+.guide-title{font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:4px;}
+.guide-text{font-size:12px;color:var(--text-secondary);line-height:1.6;}
+.code-block{background:var(--bg-primary);border:1px solid var(--border);border-radius:7px;padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent-teal);margin-top:8px;word-break:break-all;}
+
+@media(max-width:768px){
+  #sidebar{width:58px;}
+  #sidebar .nav-text,#sidebar .sidebar-section-label{opacity:0;width:0;overflow:hidden;}
+  #main-content{margin-left:58px;padding:14px;}
+  .metrics-grid{grid-template-columns:repeat(2,1fr);}
+  .charts-grid{grid-template-columns:1fr;}
+  .form-row{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header id="app-header">
+  <div class="header-left">
+    <div class="logo-wrap"><i class="fas fa-bolt-lightning"></i></div>
+    <div>
+      <div class="app-title" id="app-title-display">Unit Elektrik JPPF</div>
+      <div class="app-subtitle"><i class="fas fa-chart-mixed" style="font-size:10px;"></i> Sistem Pemantauan Prestasi</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="sync-indicator" id="sync-indicator" onclick="navigate('update')" title="Status segerak Google Sheets">
+      <span class="sync-dot" id="sync-dot"></span>
+      <span id="sync-label">Tidak Disambung</span>
+    </div>
+    <button class="hdr-btn" onclick="manualSyncAll()" id="global-sync-btn" title="Segerak Sekarang"><i class="fas fa-rotate"></i><span class="tooltip">Segerak</span></button>
+    <button class="hdr-btn" onclick="toggleTheme()"><i class="fas fa-circle-half-stroke"></i><span class="tooltip">Tukar Tema</span></button>
+    <button class="hdr-btn" onclick="navigate('settings')"><i class="fas fa-gear"></i><span class="tooltip">Tetapan</span></button>
+    <div class="user-chip">
+      <div class="user-avatar">KU</div>
+      <span class="user-name">Ketua Unit</span>
+    </div>
+  </div>
+</header>
+
+<!-- LAYOUT -->
+<div id="layout">
+  <nav id="sidebar">
+    <div class="sidebar-top">
+      <div class="sidebar-section-label">Utama</div>
+      <div class="nav-item active" onclick="navigate('dashboard')" data-tip="Dashboard">
+        <div class="nav-icon-wrap"><i class="fas fa-chart-line"></i></div>
+        <span class="nav-text">Dashboard</span>
+      </div>
+      <div class="nav-item" onclick="navigate('dv3')" data-tip="DV3">
+        <div class="nav-icon-wrap"><i class="fas fa-file-invoice"></i></div>
+        <span class="nav-text" id="nav-dv3-text">DV3</span>
+      </div>
+      <div class="nav-item" onclick="navigate('ppm')" data-tip="PPM">
+        <div class="nav-icon-wrap"><i class="fas fa-screwdriver-wrench"></i></div>
+        <span class="nav-text" id="nav-ppm-text">PPM</span>
+      </div>
+      <div class="nav-item" onclick="navigate('kontraktor')" data-tip="Kontraktor">
+        <div class="nav-icon-wrap"><i class="fas fa-helmet-safety"></i></div>
+        <span class="nav-text" id="nav-kon-text">Kontraktor</span>
+      </div>
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section-label">Sistem</div>
+      <div class="nav-item" onclick="navigate('update')" data-tip="Kemaskini">
+        <div class="nav-icon-wrap"><i class="fas fa-cloud-arrow-up"></i></div>
+        <span class="nav-text">Kemaskini Data</span>
+        <span class="nav-badge" id="unsync-badge" style="display:none">!</span>
+      </div>
+      <div class="nav-item" onclick="navigate('settings')" data-tip="Tetapan">
+        <div class="nav-icon-wrap"><i class="fas fa-sliders"></i></div>
+        <span class="nav-text">Tetapan</span>
+      </div>
+    </div>
+    <div class="sidebar-bottom">
+      <button class="sidebar-toggle-btn" onclick="toggleSidebar()">
+        <i class="fas fa-chevron-left" id="sidebar-chevron"></i>
+        <span>Sorok Sidebar</span>
+      </button>
+    </div>
+  </nav>
+
+  <main id="main-content">
+
+    <!-- ===== DASHBOARD ===== -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div class="page-title-wrap">
+          <div class="page-title"><i class="fas fa-chart-line" style="color:var(--accent-blue);font-size:20px;margin-right:8px;"></i>Dashboard Utama</div>
+          <div class="page-subtitle"><i class="fas fa-circle-info" style="color:var(--accent-blue);font-size:11px;"></i> Ringkasan prestasi keseluruhan unit elektrik</div>
+        </div>
+        <div class="page-actions">
+          <div class="year-pills" id="dash-year-pills"></div>
+          <button class="btn btn-sync" onclick="manualSyncAll()" id="dash-sync-btn"><i class="fas fa-rotate"></i> Segerak</button>
+        </div>
+      </div>
+      <div class="metrics-grid" id="dash-metrics"></div>
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-header"><div><div class="chart-title"><i class="fas fa-chart-bar" style="color:var(--accent-teal);margin-right:6px;"></i>Prestasi DV3 — Penyenggara</div><div class="chart-sub">Siap vs Tak Siap mengikut penyenggara</div></div><div class="chart-icon mi-teal" style="border-radius:8px;"><i class="fas fa-file-invoice"></i></div></div>
+          <div style="position:relative;height:255px;"><canvas id="cDv3Bar" role="img" aria-label="Bar DV3">DV3 bar.</canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header"><div><div class="chart-title"><i class="fas fa-chart-column" style="color:var(--accent-blue);margin-right:6px;"></i>Prestasi PPM — Bulanan</div><div class="chart-sub">Siap vs Tak Siap mengikut bulan</div></div><div class="chart-icon mi-blue" style="border-radius:8px;"><i class="fas fa-screwdriver-wrench"></i></div></div>
+          <div style="position:relative;height:255px;"><canvas id="cPpmBar" role="img" aria-label="Bar PPM">PPM bar.</canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header"><div><div class="chart-title"><i class="fas fa-circle-half-stroke" style="color:var(--accent-green);margin-right:6px;"></i>Nisbah DV3</div><div class="chart-sub">Peratusan siap / tak siap</div></div></div>
+          <div style="display:flex;align-items:center;justify-content:center;height:210px;"><div style="position:relative;width:175px;height:175px;"><canvas id="cDv3Dough" role="img" aria-label="Doughnut DV3">Doughnut.</canvas></div></div>
+          <div id="dv3-dough-legend" style="display:flex;justify-content:center;gap:18px;font-size:12px;color:var(--text-secondary);margin-top:8px;"></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header"><div><div class="chart-title"><i class="fas fa-circle-half-stroke" style="color:var(--accent-amber);margin-right:6px;"></i>Nisbah PPM</div><div class="chart-sub">Peratusan siap / tak siap</div></div></div>
+          <div style="display:flex;align-items:center;justify-content:center;height:210px;"><div style="position:relative;width:175px;height:175px;"><canvas id="cPpmDough" role="img" aria-label="Doughnut PPM">Doughnut.</canvas></div></div>
+          <div id="ppm-dough-legend" style="display:flex;justify-content:center;gap:18px;font-size:12px;color:var(--text-secondary);margin-top:8px;"></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:18px;">
+        <div class="chart-card">
+          <div class="chart-header"><div><div class="chart-title"><i class="fas fa-money-bill-trend-up" style="color:var(--accent-purple);margin-right:6px;"></i>Nilai RM Kontraktor</div><div class="chart-sub">Jumlah nilai kerja mengikut kontraktor</div></div></div>
+          <div style="position:relative;height:215px;"><canvas id="cKonRM" role="img" aria-label="RM Kontraktor">RM.</canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header"><div><div class="chart-title"><i class="fas fa-trophy" style="color:var(--accent-amber);margin-right:6px;"></i>Ranking Penyenggara</div><div class="chart-sub">Berdasarkan % siap DV3</div></div></div>
+          <div id="ranking-list" style="margin-top:4px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== DV3 ===== -->
+    <div class="page" id="page-dv3">
+      <div class="page-header">
+        <div class="page-title-wrap">
+          <div class="page-title"><i class="fas fa-file-invoice" style="color:var(--accent-teal);font-size:20px;margin-right:8px;"></i><span id="page-title-dv3">Tab DV3</span></div>
+          <div class="page-subtitle"><i class="fas fa-folder-open" style="font-size:11px;color:var(--text-muted);"></i> Pengurusan Doket Penyelenggaraan</div>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-sync btn-sm" onclick="syncTab('dv3')" id="dv3-sync-btn"><i class="fas fa-rotate"></i> Segerak</button>
+          <button class="btn btn-primary" onclick="openAddModal('dv3')"><i class="fas fa-plus-circle"></i> Tambah Rekod</button>
+        </div>
+      </div>
+      <div class="filters-bar">
+        <div class="filter-group"><div class="filter-label"><i class="fas fa-calendar-days"></i>Tahun</div><select class="fc" id="dv3-fy" onchange="renderDv3()"><option value="">Semua</option></select></div>
+        <div class="filter-group"><div class="filter-label"><i class="fas fa-user-gear"></i>Penyenggara</div><select class="fc" id="dv3-fp" onchange="renderDv3()"><option value="">Semua</option></select></div>
+        <div class="filter-group" style="flex:1;min-width:170px;"><div class="filter-label"><i class="fas fa-magnifying-glass"></i>Carian</div><input type="text" class="fc" id="dv3-fs" placeholder="Cari penyenggara..." oninput="renderDv3()"></div>
+        <button class="btn btn-outline btn-sm" onclick="clearFilters('dv3')"><i class="fas fa-filter-circle-xmark"></i> Reset</button>
+      </div>
+      <div class="metrics-grid" id="dv3-metrics"></div>
+      <div class="charts-grid" style="margin-bottom:18px;">
+        <div class="chart-card"><div class="chart-header"><div><div class="chart-title"><i class="fas fa-chart-bar" style="color:var(--accent-teal);margin-right:6px;"></i>Siap vs Tak Siap</div><div class="chart-sub">Mengikut penyenggara</div></div></div><div style="position:relative;height:235px;"><canvas id="cDv3TabBar" role="img" aria-label="DV3 tab">DV3.</canvas></div></div>
+        <div class="chart-card"><div class="chart-header"><div><div class="chart-title"><i class="fas fa-chart-line" style="color:var(--accent-blue);margin-right:6px;"></i>Trend Tahunan DV3</div><div class="chart-sub">Jumlah doket mengikut tahun</div></div></div><div style="position:relative;height:235px;"><canvas id="cDv3Trend" role="img" aria-label="Trend DV3">Trend.</canvas></div></div>
+      </div>
+      <div class="table-card">
+        <div class="table-header">
+          <div class="table-title"><i class="fas fa-table-list" style="color:var(--accent-teal);"></i> Rekod DV3 <span class="count-chip" id="dv3-count">0</span></div>
+          <input type="text" class="table-search" placeholder="Cari rekod..." oninput="renderDv3()" id="dv3-ts">
+        </div>
+        <div class="tbl-overflow"><table class="data-table"><thead><tr>
+          <th><i class="fas fa-hashtag"></i>#</th>
+          <th><i class="fas fa-calendar"></i>Tahun</th>
+          <th><i class="fas fa-user-tie"></i>Penyenggara</th>
+          <th><i class="fas fa-circle-xmark"></i>Tak Siap</th>
+          <th><i class="fas fa-circle-check"></i>Siap</th>
+          <th><i class="fas fa-file-lines"></i>Jum. Doket</th>
+          <th><i class="fas fa-percent"></i>% Siap</th>
+          <th><i class="fas fa-database"></i>Sheet</th>
+          <th><i class="fas fa-ellipsis"></i>Tindakan</th>
+        </tr></thead><tbody id="dv3-tbody"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- ===== PPM ===== -->
+    <div class="page" id="page-ppm">
+      <div class="page-header">
+        <div class="page-title-wrap">
+          <div class="page-title"><i class="fas fa-screwdriver-wrench" style="color:var(--accent-blue);font-size:20px;margin-right:8px;"></i><span id="page-title-ppm">Tab PPM</span></div>
+          <div class="page-subtitle"><i class="fas fa-calendar-check" style="font-size:11px;color:var(--text-muted);"></i> Penyelenggaraan Pencegahan Merancang</div>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-sync btn-sm" onclick="syncTab('ppm')" id="ppm-sync-btn"><i class="fas fa-rotate"></i> Segerak</button>
+          <button class="btn btn-primary" onclick="openAddModal('ppm')"><i class="fas fa-plus-circle"></i> Tambah Rekod</button>
+        </div>
+      </div>
+      <div class="filters-bar">
+        <div class="filter-group"><div class="filter-label"><i class="fas fa-calendar-week"></i>Bulan</div><select class="fc" id="ppm-fm" onchange="renderPpm()"><option value="">Semua</option><option>Januari</option><option>Februari</option><option>Mac</option><option>April</option><option>Mei</option><option>Jun</option><option>Julai</option><option>Ogos</option><option>September</option><option>Oktober</option><option>November</option><option>Disember</option></select></div>
+        <div class="filter-group"><div class="filter-label"><i class="fas fa-calendar-days"></i>Tahun</div><select class="fc" id="ppm-fy" onchange="renderPpm()"><option value="">Semua</option></select></div>
+        <div class="filter-group"><div class="filter-label"><i class="fas fa-user-gear"></i>Penyenggara</div><select class="fc" id="ppm-fp" onchange="renderPpm()"><option value="">Semua</option></select></div>
+        <div class="filter-group" style="flex:1;min-width:150px;"><div class="filter-label"><i class="fas fa-magnifying-glass"></i>Carian</div><input type="text" class="fc" id="ppm-fs" placeholder="Cari..." oninput="renderPpm()"></div>
+        <button class="btn btn-outline btn-sm" onclick="clearFilters('ppm')"><i class="fas fa-filter-circle-xmark"></i> Reset</button>
+      </div>
+      <div class="metrics-grid" id="ppm-metrics"></div>
+      <div class="charts-grid" style="margin-bottom:18px;">
+        <div class="chart-card"><div class="chart-header"><div><div class="chart-title"><i class="fas fa-chart-bar" style="color:var(--accent-blue);margin-right:6px;"></i>Siap vs Tak Siap</div><div class="chart-sub">Mengikut penyenggara</div></div></div><div style="position:relative;height:235px;"><canvas id="cPpmTabBar" role="img" aria-label="PPM tab">PPM.</canvas></div></div>
+        <div class="chart-card"><div class="chart-header"><div><div class="chart-title"><i class="fas fa-chart-area" style="color:var(--accent-teal);margin-right:6px;"></i>Trend Bulanan PPM</div><div class="chart-sub">Jumlah PPM mengikut bulan</div></div></div><div style="position:relative;height:235px;"><canvas id="cPpmTrend" role="img" aria-label="Trend PPM">Trend.</canvas></div></div>
+      </div>
+      <div class="table-card">
+        <div class="table-header">
+          <div class="table-title"><i class="fas fa-table-list" style="color:var(--accent-blue);"></i> Rekod PPM <span class="count-chip" id="ppm-count">0</span></div>
+          <input type="text" class="table-search" placeholder="Cari rekod..." oninput="renderPpm()" id="ppm-ts">
+        </div>
+        <div class="tbl-overflow"><table class="data-table"><thead><tr>
+          <th><i class="fas fa-hashtag"></i>#</th>
+          <th><i class="fas fa-calendar-week"></i>Bulan</th>
+          <th><i class="fas fa-calendar"></i>Tahun</th>
+          <th><i class="fas fa-user-tie"></i>Penyenggara</th>
+          <th><i class="fas fa-circle-xmark"></i>Tak Siap</th>
+          <th><i class="fas fa-circle-check"></i>Siap</th>
+          <th><i class="fas fa-wrench"></i>Jum. PPM</th>
+          <th><i class="fas fa-percent"></i>% Siap</th>
+          <th><i class="fas fa-database"></i>Sheet</th>
+          <th><i class="fas fa-ellipsis"></i>Tindakan</th>
+        </tr></thead><tbody id="ppm-tbody"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- ===== KONTRAKTOR ===== -->
+    <div class="page" id="page-kontraktor">
+      <div class="page-header">
+        <div class="page-title-wrap">
+          <div class="page-title"><i class="fas fa-helmet-safety" style="color:var(--accent-amber);font-size:20px;margin-right:8px;"></i><span id="page-title-kon">Tab Kontraktor</span></div>
+          <div class="page-subtitle"><i class="fas fa-person-digging" style="font-size:11px;color:var(--text-muted);"></i> Pengurusan Kerja Kontraktor</div>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-sync btn-sm" onclick="syncTab('kontraktor')" id="kon-sync-btn"><i class="fas fa-rotate"></i> Segerak</button>
+          <button class="btn btn-primary" onclick="openAddModal('kontraktor')"><i class="fas fa-plus-circle"></i> Tambah Rekod</button>
+        </div>
+      </div>
+      <div class="filters-bar">
+        <div class="filter-group"><div class="filter-label"><i class="fas fa-calendar-week"></i>Bulan</div><select class="fc" id="kon-fm" onchange="renderKon()"><option value="">Semua</option><option>Januari</option><option>Februari</option><option>Mac</option><option>April</option><option>Mei</option><option>Jun</option><option>Julai</option><option>Ogos</option><option>September</option><option>Oktober</option><option>November</option><option>Disember</option></select></div>
+        <div class="filter-group"><div class="filter-label"><i class="fas fa-calendar-days"></i>Tahun</div><select class="fc" id="kon-fy" onchange="renderKon()"><option value="">Semua</option></select></div>
+        <div class="filter-group"><div class="filter-label"><i class="fas fa-building-user"></i>Kontraktor</div><select class="fc" id="kon-fk" onchange="renderKon()"><option value="">Semua</option></select></div>
+        <div class="filter-group"><div class="filter-label"><i class="fas fa-map-location-dot"></i>Zon</div><select class="fc" id="kon-fz" onchange="renderKon()"><option value="">Semua</option></select></div>
+        <div class="filter-group" style="flex:1;min-width:140px;"><div class="filter-label"><i class="fas fa-magnifying-glass"></i>Carian</div><input type="text" class="fc" id="kon-fs" placeholder="Cari..." oninput="renderKon()"></div>
+        <button class="btn btn-outline btn-sm" onclick="clearFilters('kontraktor')"><i class="fas fa-filter-circle-xmark"></i> Reset</button>
+      </div>
+      <div class="metrics-grid" id="kon-metrics"></div>
+      <div class="charts-grid" style="margin-bottom:18px;">
+        <div class="chart-card"><div class="chart-header"><div><div class="chart-title"><i class="fas fa-chart-bar" style="color:var(--accent-purple);margin-right:6px;"></i>Doket Mengikut Kontraktor</div><div class="chart-sub">Perbandingan beban kerja</div></div></div><div style="position:relative;height:235px;"><canvas id="cKonBar" role="img" aria-label="Kontraktor bar">Kontraktor.</canvas></div></div>
+        <div class="chart-card"><div class="chart-header"><div><div class="chart-title"><i class="fas fa-chart-pie" style="color:var(--accent-amber);margin-right:6px;"></i>Nilai RM Mengikut Zon</div><div class="chart-sub">Agihan nilai kerja</div></div></div><div style="position:relative;height:235px;"><canvas id="cKonZon" role="img" aria-label="Zon RM">Zon.</canvas></div></div>
+      </div>
+      <div class="table-card">
+        <div class="table-header">
+          <div class="table-title"><i class="fas fa-table-list" style="color:var(--accent-amber);"></i> Rekod Kontraktor <span class="count-chip" id="kon-count">0</span></div>
+          <input type="text" class="table-search" placeholder="Cari rekod..." oninput="renderKon()" id="kon-ts">
+        </div>
+        <div class="tbl-overflow"><table class="data-table"><thead><tr>
+          <th><i class="fas fa-hashtag"></i>#</th>
+          <th><i class="fas fa-calendar-week"></i>Bulan</th>
+          <th><i class="fas fa-calendar"></i>Tahun</th>
+          <th><i class="fas fa-building-user"></i>Kontraktor</th>
+          <th><i class="fas fa-map-location-dot"></i>Zon</th>
+          <th><i class="fas fa-file-lines"></i>Jum. Doket</th>
+          <th><i class="fas fa-money-bill-wave"></i>Jumlah RM</th>
+          <th><i class="fas fa-database"></i>Sheet</th>
+          <th><i class="fas fa-ellipsis"></i>Tindakan</th>
+        </tr></thead><tbody id="kon-tbody"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- ===== KEMASKINI DATA ===== -->
+    <div class="page" id="page-update">
+      <div class="page-header">
+        <div class="page-title-wrap">
+          <div class="page-title"><i class="fas fa-cloud-arrow-up" style="color:var(--accent-teal);font-size:20px;margin-right:8px;"></i>Kemaskini & Segerak Data</div>
+          <div class="page-subtitle"><i class="fas fa-google" style="font-size:11px;color:var(--text-muted);"></i> Integrasi dua-hala dengan Google Sheets</div>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-sync" onclick="manualSyncAll()" id="update-sync-btn"><i class="fas fa-rotate"></i> Segerak Semua</button>
+        </div>
+      </div>
+
+      <!-- SHEETS CONFIG -->
+      <div class="settings-section">
+        <div class="settings-section-title">
+          <div class="s-icon mi-teal" style="background:rgba(20,184,166,.15);color:var(--accent-teal);"><i class="fas fa-table-columns"></i></div>
+          Konfigurasi Google Sheets
+        </div>
+
+        <!-- DV3 Sheet -->
+        <div class="sheet-config-card" id="scc-dv3">
+          <div class="scc-header">
+            <div class="scc-title"><div class="chart-icon mi-teal" style="width:26px;height:26px;border-radius:7px;font-size:12px;background:rgba(20,184,166,.15);color:var(--accent-teal);display:flex;align-items:center;justify-content:center;"><i class="fas fa-file-invoice"></i></div><span id="scc-dv3-name">DV3</span></div>
+            <div class="scc-status" id="scc-dv3-status"><i class="fas fa-circle" style="font-size:8px;color:var(--text-muted);"></i> Belum Disambung</div>
+          </div>
+          <div class="scc-url-row">
+            <input type="url" class="form-control scc-url-input" id="sheet-url-dv3" placeholder="https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec?sheet=DV3">
+            <button class="btn btn-teal btn-sm" onclick="testSheetConnection('dv3')"><i class="fas fa-plug"></i> Test</button>
+            <button class="btn btn-primary btn-sm" onclick="saveSheetUrl('dv3')"><i class="fas fa-floppy-disk"></i> Simpan</button>
+          </div>
+          <div class="scc-note"><i class="fas fa-circle-info" style="color:var(--accent-blue);"></i> Masukkan URL Google Apps Script Web App yang telah di-deploy untuk tab DV3.</div>
+        </div>
+
+        <!-- PPM Sheet -->
+        <div class="sheet-config-card" id="scc-ppm">
+          <div class="scc-header">
+            <div class="scc-title"><div style="width:26px;height:26px;border-radius:7px;font-size:12px;background:rgba(59,130,246,.15);color:var(--accent-blue);display:flex;align-items:center;justify-content:center;"><i class="fas fa-screwdriver-wrench"></i></div><span id="scc-ppm-name">PPM</span></div>
+            <div class="scc-status" id="scc-ppm-status"><i class="fas fa-circle" style="font-size:8px;color:var(--text-muted);"></i> Belum Disambung</div>
+          </div>
+          <div class="scc-url-row">
+            <input type="url" class="form-control scc-url-input" id="sheet-url-ppm" placeholder="https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec?sheet=PPM">
+            <button class="btn btn-teal btn-sm" onclick="testSheetConnection('ppm')"><i class="fas fa-plug"></i> Test</button>
+            <button class="btn btn-primary btn-sm" onclick="saveSheetUrl('ppm')"><i class="fas fa-floppy-disk"></i> Simpan</button>
+          </div>
+          <div class="scc-note"><i class="fas fa-circle-info" style="color:var(--accent-blue);"></i> Masukkan URL Google Apps Script Web App untuk tab PPM.</div>
+        </div>
+
+        <!-- Kontraktor Sheet -->
+        <div class="sheet-config-card" id="scc-kon">
+          <div class="scc-header">
+            <div class="scc-title"><div style="width:26px;height:26px;border-radius:7px;font-size:12px;background:rgba(245,158,11,.15);color:var(--accent-amber);display:flex;align-items:center;justify-content:center;"><i class="fas fa-helmet-safety"></i></div><span id="scc-kon-name">Kontraktor</span></div>
+            <div class="scc-status" id="scc-kon-status"><i class="fas fa-circle" style="font-size:8px;color:var(--text-muted);"></i> Belum Disambung</div>
+          </div>
+          <div class="scc-url-row">
+            <input type="url" class="form-control scc-url-input" id="sheet-url-kon" placeholder="https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec?sheet=Kontraktor">
+            <button class="btn btn-teal btn-sm" onclick="testSheetConnection('kontraktor')"><i class="fas fa-plug"></i> Test</button>
+            <button class="btn btn-primary btn-sm" onclick="saveSheetUrl('kontraktor')"><i class="fas fa-floppy-disk"></i> Simpan</button>
+          </div>
+          <div class="scc-note"><i class="fas fa-circle-info" style="color:var(--accent-blue);"></i> Masukkan URL Google Apps Script Web App untuk tab Kontraktor.</div>
+        </div>
+
+        <div style="margin-top:16px;padding:14px;background:var(--bg-secondary);border-radius:var(--radius-sm);border:1px solid var(--border);">
+          <div style="font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:8px;display:flex;align-items:center;gap:7px;"><i class="fas fa-clock-rotate-left" style="color:var(--accent-blue);"></i> Auto-Segerak</div>
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-secondary);cursor:pointer;">
+              <input type="checkbox" id="auto-sync-toggle" onchange="toggleAutoSync()" style="accent-color:var(--accent-blue);width:15px;height:15px;">
+              Segerak automatik setiap
+            </label>
+            <select class="fc" id="auto-sync-interval" style="max-width:120px;" onchange="updateAutoSyncInterval()">
+              <option value="30000">30 saat</option>
+              <option value="60000" selected>1 minit</option>
+              <option value="300000">5 minit</option>
+              <option value="600000">10 minit</option>
+            </select>
+            <span style="font-size:12px;color:var(--text-muted);" id="last-sync-time"><i class="fas fa-clock"></i> Belum pernah segerak</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- GUIDE -->
+      <div class="settings-section">
+        <div class="settings-section-title">
+          <div class="s-icon" style="background:rgba(245,158,11,.15);color:var(--accent-amber);"><i class="fas fa-book-open"></i></div>
+          Panduan Persediaan Google Apps Script
+        </div>
+        <div class="guide-step">
+          <div class="guide-num">1</div>
+          <div class="guide-content">
+            <div class="guide-title"><i class="fas fa-table" style="color:var(--accent-green);margin-right:6px;"></i>Buka Google Sheets anda</div>
+            <div class="guide-text">Buat spreadsheet baru atau guna yang sedia ada. Pastikan ada 3 tab/sheet: <strong>DV3</strong>, <strong>PPM</strong>, dan <strong>Kontraktor</strong>. Row pertama adalah header.</div>
+          </div>
+        </div>
+        <div class="guide-step">
+          <div class="guide-num">2</div>
+          <div class="guide-content">
+            <div class="guide-title"><i class="fas fa-code" style="color:var(--accent-blue);margin-right:6px;"></i>Buka Apps Script Editor</div>
+            <div class="guide-text">Dalam Google Sheets, klik <strong>Extensions → Apps Script</strong>. Padam kod yang ada dan tampal kod berikut:</div>
+            <div class="code-block" id="apps-script-code" style="max-height:180px;overflow-y:auto;cursor:pointer;" onclick="copyAppsScript()" title="Klik untuk salin">
+// ═══════════════════════════════════════════════════════<br>
+// JPPF Dashboard — Google Apps Script Backend<br>
+// Klik untuk SALIN kod penuh<br>
+// ═══════════════════════════════════════════════════════<br>
+<br>
+const SPREADSHEET_ID = 'GANTIKAN_DENGAN_ID_SPREADSHEET_ANDA';<br>
+<br>
+function doGet(e) {<br>
+&nbsp;&nbsp;const sheet = e.parameter.sheet || 'DV3';<br>
+&nbsp;&nbsp;const action = e.parameter.action || 'read';<br>
+&nbsp;&nbsp;const ss = SpreadsheetApp.openById(SPREADSHEET_ID);<br>
+&nbsp;&nbsp;const ws = ss.getSheetByName(sheet);<br>
+&nbsp;&nbsp;if (!ws) return json({error: 'Sheet tidak wujud: ' + sheet});<br>
+<br>
+&nbsp;&nbsp;if (action === 'read') {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;const data = ws.getDataRange().getValues();<br>
+&nbsp;&nbsp;&nbsp;&nbsp;const headers = data[0];<br>
+&nbsp;&nbsp;&nbsp;&nbsp;const rows = data.slice(1).map((r,i) => {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;const obj = {_row: i + 2};<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;headers.forEach((h,j) => obj[h] = r[j]);<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return obj;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;});<br>
+&nbsp;&nbsp;&nbsp;&nbsp;return json({success:true, data:rows});<br>
+&nbsp;&nbsp;}<br>
+&nbsp;&nbsp;return json({error:'Action tidak dikenali'});<br>
+}<br>
+<br>
+function doPost(e) {<br>
+&nbsp;&nbsp;const payload = JSON.parse(e.postData.contents);<br>
+&nbsp;&nbsp;const {sheet, action, data, rowNum} = payload;<br>
+&nbsp;&nbsp;const ss = SpreadsheetApp.openById(SPREADSHEET_ID);<br>
+&nbsp;&nbsp;const ws = ss.getSheetByName(sheet);<br>
+&nbsp;&nbsp;if (!ws) return json({error:'Sheet tidak wujud'});<br>
+<br>
+&nbsp;&nbsp;if (action === 'append') {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;const headers = ws.getRange(1, 1, 1, ws.getLastColumn()).getValues()[0];<br>
+&nbsp;&nbsp;&nbsp;&nbsp;const row = headers.map(h => data[h] !== undefined ? data[h] : '');<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ws.appendRow(row);<br>
+&nbsp;&nbsp;&nbsp;&nbsp;const newRow = ws.getLastRow();<br>
+&nbsp;&nbsp;&nbsp;&nbsp;return json({success:true, rowNum:newRow});<br>
+&nbsp;&nbsp;}<br>
+<br>
+&nbsp;&nbsp;if (action === 'update') {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;const headers = ws.getRange(1, 1, 1, ws.getLastColumn()).getValues()[0];<br>
+&nbsp;&nbsp;&nbsp;&nbsp;const row = headers.map(h => data[h] !== undefined ? data[h] : '');<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ws.getRange(rowNum, 1, 1, row.length).setValues([row]);<br>
+&nbsp;&nbsp;&nbsp;&nbsp;return json({success:true});<br>
+&nbsp;&nbsp;}<br>
+<br>
+&nbsp;&nbsp;if (action === 'delete') {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ws.deleteRow(rowNum);<br>
+&nbsp;&nbsp;&nbsp;&nbsp;return json({success:true});<br>
+&nbsp;&nbsp;}<br>
+<br>
+&nbsp;&nbsp;return json({error:'Action tidak dikenali'});<br>
+}<br>
+<br>
+function json(obj) {<br>
+&nbsp;&nbsp;return ContentService.createTextOutput(JSON.stringify(obj))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;.setMimeType(ContentService.MimeType.JSON);<br>
+}<br>
+            </div>
+            <div style="margin-top:8px;"><button class="btn btn-outline btn-sm" onclick="copyAppsScript()"><i class="fas fa-copy"></i> Salin Kod Penuh</button></div>
+          </div>
+        </div>
+        <div class="guide-step">
+          <div class="guide-num">3</div>
+          <div class="guide-content">
+            <div class="guide-title"><i class="fas fa-rocket" style="color:var(--accent-rose);margin-right:6px;"></i>Deploy sebagai Web App</div>
+            <div class="guide-text">Klik <strong>Deploy → New Deployment</strong>. Pilih type: <strong>Web App</strong>. Set "Execute as": <em>Me</em>, "Who has access": <em>Anyone</em>. Klik Deploy dan salin URL yang diberi.</div>
+          </div>
+        </div>
+        <div class="guide-step">
+          <div class="guide-num">4</div>
+          <div class="guide-content">
+            <div class="guide-title"><i class="fas fa-link" style="color:var(--accent-teal);margin-right:6px;"></i>Masukkan URL di atas</div>
+            <div class="guide-text">Tampal URL Web App ke dalam kotak URL untuk DV3, PPM, atau Kontraktor di bahagian konfigurasi atas. Tambah parameter <code style="background:var(--bg-primary);padding:2px 6px;border-radius:4px;font-family:monospace;">?sheet=DV3</code> (atau PPM/Kontraktor) di hujung URL.</div>
+          </div>
+        </div>
+        <div class="guide-step">
+          <div class="guide-num">5</div>
+          <div class="guide-content">
+            <div class="guide-title"><i class="fas fa-table-list" style="color:var(--accent-purple);margin-right:6px;"></i>Format Header Google Sheets</div>
+            <div class="guide-text">Pastikan baris pertama setiap sheet mengandungi header yang betul:</div>
+            <div class="code-block">DV3: Tahun | Penyenggara | TakSiap | Siap<br>PPM: Bulan | Tahun | Penyenggara | TakSiap | Siap<br>Kontraktor: Bulan | Tahun | Kontraktor | Zon | JumlahDoket | JumlahRM</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DATA MANAGEMENT -->
+      <div class="settings-section">
+        <div class="settings-section-title">
+          <div class="s-icon" style="background:rgba(244,63,94,.15);color:var(--accent-rose);"><i class="fas fa-database"></i></div>
+          Urus Data Tempatan
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;">
+          <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div class="chart-icon mi-teal" style="width:28px;height:28px;border-radius:8px;background:rgba(20,184,166,.15);color:var(--accent-teal);display:flex;align-items:center;justify-content:center;font-size:12px;"><i class="fas fa-file-invoice"></i></div><span style="font-size:13px;font-weight:700;color:var(--text-primary);" id="scc-dv3-name2">DV3</span></div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;" id="dv3-dc"><i class="fas fa-circle-info"></i> 0 rekod tempatan</div>
+            <div style="display:flex;gap:6px;">
+              <button class="btn btn-sync btn-xs" onclick="syncTab('dv3')"><i class="fas fa-rotate"></i> Segerak</button>
+              <button class="btn btn-danger btn-xs" onclick="clearData('dv3')"><i class="fas fa-trash-can"></i> Padam</button>
+            </div>
+          </div>
+          <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;border-radius:8px;background:rgba(59,130,246,.15);color:var(--accent-blue);display:flex;align-items:center;justify-content:center;font-size:12px;"><i class="fas fa-screwdriver-wrench"></i></div><span style="font-size:13px;font-weight:700;color:var(--text-primary);" id="scc-ppm-name2">PPM</span></div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;" id="ppm-dc"><i class="fas fa-circle-info"></i> 0 rekod tempatan</div>
+            <div style="display:flex;gap:6px;">
+              <button class="btn btn-sync btn-xs" onclick="syncTab('ppm')"><i class="fas fa-rotate"></i> Segerak</button>
+              <button class="btn btn-danger btn-xs" onclick="clearData('ppm')"><i class="fas fa-trash-can"></i> Padam</button>
+            </div>
+          </div>
+          <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;border-radius:8px;background:rgba(245,158,11,.15);color:var(--accent-amber);display:flex;align-items:center;justify-content:center;font-size:12px;"><i class="fas fa-helmet-safety"></i></div><span style="font-size:13px;font-weight:700;color:var(--text-primary);" id="scc-kon-name2">Kontraktor</span></div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;" id="kon-dc"><i class="fas fa-circle-info"></i> 0 rekod tempatan</div>
+            <div style="display:flex;gap:6px;">
+              <button class="btn btn-sync btn-xs" onclick="syncTab('kontraktor')"><i class="fas fa-rotate"></i> Segerak</button>
+              <button class="btn btn-danger btn-xs" onclick="clearData('kontraktor')"><i class="fas fa-trash-can"></i> Padam</button>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+          <button class="btn btn-success" onclick="loadSampleData()"><i class="fas fa-database"></i> Muatkan Data Contoh</button>
+          <span style="font-size:12px;color:var(--text-muted);margin-left:12px;">Data tempatan sahaja — berguna untuk ujian dashboard</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SETTINGS ===== -->
+    <div class="page" id="page-settings">
+      <div class="page-header">
+        <div class="page-title-wrap">
+          <div class="page-title"><i class="fas fa-sliders" style="color:var(--accent-purple);font-size:20px;margin-right:8px;"></i>Tetapan Sistem</div>
+          <div class="page-subtitle"><i class="fas fa-gear" style="font-size:11px;color:var(--text-muted);"></i> Konfigurasi nama, tema, dan paparan</div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-title"><div class="s-icon" style="background:rgba(59,130,246,.15);color:var(--accent-blue);"><i class="fas fa-tag"></i></div>Nama Tajuk & Tab</div>
+        <div class="form-row" style="margin-bottom:14px;">
+          <div class="form-group"><label class="form-label"><i class="fas fa-heading"></i>Nama Sistem</label><input type="text" class="form-control" id="st-app-title" value="Unit Elektrik JPPF"></div>
+          <div class="form-group"><label class="form-label"><i class="fas fa-file-invoice"></i>Nama Tab DV3</label><input type="text" class="form-control" id="st-dv3" value="DV3"></div>
+          <div class="form-group"><label class="form-label"><i class="fas fa-screwdriver-wrench"></i>Nama Tab PPM</label><input type="text" class="form-control" id="st-ppm" value="PPM"></div>
+          <div class="form-group"><label class="form-label"><i class="fas fa-helmet-safety"></i>Nama Tab Kontraktor</label><input type="text" class="form-control" id="st-kon" value="Kontraktor"></div>
+        </div>
+        <button class="btn btn-primary" onclick="saveSettings()"><i class="fas fa-floppy-disk"></i> Simpan Tetapan</button>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-title"><div class="s-icon" style="background:rgba(245,158,11,.15);color:var(--accent-amber);"><i class="fas fa-palette"></i></div>Tema Antaramuka</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn btn-outline" onclick="setTheme('dark')"><i class="fas fa-moon" style="color:var(--accent-purple);"></i> Mod Gelap</button>
+          <button class="btn btn-outline" onclick="setTheme('light')"><i class="fas fa-sun" style="color:var(--accent-amber);"></i> Mod Cerah</button>
+        </div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-title"><div class="s-icon" style="background:rgba(34,197,94,.15);color:var(--accent-green);"><i class="fas fa-circle-info"></i></div>Maklumat Sistem</div>
+        <div style="display:grid;gap:10px;font-size:13px;">
+          <div style="display:flex;gap:16px;align-items:center;"><span style="color:var(--text-muted);width:160px;display:flex;align-items:center;gap:6px;"><i class="fas fa-code-branch"></i>Versi</span><span class="badge bdg-blue"><i class="fas fa-tag"></i>v3.0.0</span></div>
+          <div style="display:flex;gap:16px;align-items:center;"><span style="color:var(--text-muted);width:160px;display:flex;align-items:center;gap:6px;"><i class="fas fa-building-columns"></i>Organisasi</span><span style="color:var(--text-primary);">JPPF — Unit Elektrik</span></div>
+          <div style="display:flex;gap:16px;align-items:center;"><span style="color:var(--text-muted);width:160px;display:flex;align-items:center;gap:6px;"><i class="fas fa-server"></i>Pangkalan Data</span><span style="color:var(--text-primary);display:flex;align-items:center;gap:6px;"><i class="fas fa-table" style="color:var(--accent-green);"></i>Google Sheets + LocalStorage</span></div>
+          <div style="display:flex;gap:16px;align-items:center;"><span style="color:var(--text-muted);width:160px;display:flex;align-items:center;gap:6px;"><i class="fas fa-signal"></i>Status</span><span class="badge bdg-green"><i class="fas fa-circle" style="font-size:8px;"></i>Aktif</span></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- EDIT/ADD MODAL -->
+<div class="modal-overlay" id="modal-add">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-icon mi-add" id="modal-icon"><i class="fas fa-plus-circle"></i></div>
+      <div><div class="modal-title" id="modal-title">Tambah Rekod</div><div class="modal-subtitle" id="modal-subtitle">Isi maklumat lengkap</div></div>
+    </div>
+    <div id="modal-body"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('modal-add')"><i class="fas fa-xmark"></i> Batal</button>
+      <button class="btn btn-primary" id="modal-save-btn" onclick="saveRecord()"><i class="fas fa-floppy-disk"></i> Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE MODAL -->
+<div class="modal-overlay" id="modal-del">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-header">
+      <div class="modal-icon mi-delete"><i class="fas fa-triangle-exclamation"></i></div>
+      <div><div class="modal-title">Padam Rekod?</div><div class="modal-subtitle" id="del-subtitle">Rekod ini akan dipadam dari sistem dan Google Sheets.</div></div>
+    </div>
+    <div style="background:rgba(244,63,94,.08);border:1px solid rgba(244,63,94,.2);border-radius:var(--radius-sm);padding:12px 14px;font-size:13px;color:var(--text-secondary);display:flex;gap:8px;">
+      <i class="fas fa-circle-exclamation" style="color:var(--accent-rose);margin-top:1px;"></i>
+      <span>Tindakan ini tidak boleh diundurkan. Jika disambung ke Google Sheets, rekod akan dipadam dari spreadsheet juga.</span>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('modal-del')"><i class="fas fa-xmark"></i> Batal</button>
+      <button class="btn btn-danger" id="del-confirm-btn"><i class="fas fa-trash-can"></i> Ya, Padam</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST STACK -->
+<div id="toast-stack"></div>
+
+<script>
+// ══════════════════════════════════════════════════
+// DATA STORE
+// ══════════════════════════════════════════════════
+const MONTHS = ['Januari','Februari','Mac','April','Mei','Jun','Julai','Ogos','September','Oktober','November','Disember'];
+
+let db = { dv3:[], ppm:[], kontraktor:[] };
+let cfg = {
+  appTitle:'Unit Elektrik JPPF', tabDv3:'DV3', tabPpm:'PPM', tabKon:'Kontraktor',
+  sheetDv3:'', sheetPpm:'', sheetKon:'',
+  autoSync:false, autoSyncInterval:60000
+};
+let charts = {};
+let currentPage = 'dashboard';
+let selectedYear = 'all';
+let darkMode = true;
+let editCtx = { type:null, index:null };
+let modalType = null;
+let autoSyncTimer = null;
+
+// ══════════════════════════════════════════════════
+// STORAGE
+// ══════════════════════════════════════════════════
+function save() {
+  try { localStorage.setItem('jppf_db3', JSON.stringify(db)); localStorage.setItem('jppf_cfg3', JSON.stringify(cfg)); } catch(e){}
+}
+function load() {
+  try {
+    const d = localStorage.getItem('jppf_db3');
+    const c = localStorage.getItem('jppf_cfg3');
+    if (d) db = {...db, ...JSON.parse(d)};
+    if (c) cfg = {...cfg, ...JSON.parse(c)};
+  } catch(e){}
+}
+
+// ══════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════
+function navigate(pg) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+pg).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>{ if((n.getAttribute('onclick')||'').includes("'"+pg+"'")) n.classList.add('active'); });
+  currentPage = pg;
+  if(pg==='dashboard') renderDashboard();
+  if(pg==='dv3') renderDv3();
+  if(pg==='ppm') renderPpm();
+  if(pg==='kontraktor') renderKon();
+  if(pg==='update') renderUpdatePage();
+}
+
+// ══════════════════════════════════════════════════
+// SIDEBAR
+// ══════════════════════════════════════════════════
+let sidebarCol = false;
+function toggleSidebar() {
+  sidebarCol = !sidebarCol;
+  document.getElementById('sidebar').classList.toggle('collapsed', sidebarCol);
+  document.getElementById('sidebar-chevron').className = sidebarCol ? 'fas fa-chevron-right' : 'fas fa-chevron-left';
+}
+
+// ══════════════════════════════════════════════════
+// THEME
+// ══════════════════════════════════════════════════
+function toggleTheme(){ setTheme(darkMode?'light':'dark'); }
+function setTheme(t){ darkMode=(t==='dark'); document.body.classList.toggle('light-mode',!darkMode); refreshCharts(); save(); }
+
+// ══════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════
+function toast(msg, type='success', dur=3000) {
+  const stack = document.getElementById('toast-stack');
+  const icons = {success:'fa-circle-check',error:'fa-circle-xmark',info:'fa-circle-info',warning:'fa-triangle-exclamation'};
+  const colors = {success:'var(--accent-green)',error:'var(--accent-rose)',info:'var(--accent-blue)',warning:'var(--accent-amber)'};
+  const el = document.createElement('div');
+  el.className = `toast-item toast-${type}`;
+  el.innerHTML = `<i class="fas ${icons[type]}" style="color:${colors[type]};font-size:15px;"></i><span>${msg}</span>`;
+  stack.appendChild(el);
+  setTimeout(()=>{ el.classList.add('removing'); setTimeout(()=>el.remove(),300); }, dur);
+}
+
+// ══════════════════════════════════════════════════
+// CHART HELPERS
+// ══════════════════════════════════════════════════
+function dc(id){ if(charts[id]){charts[id].destroy();delete charts[id];} }
+function cc(){ return darkMode
+  ? {blue:'#3b82f6',teal:'#14b8a6',green:'#22c55e',rose:'#f43f5e',amber:'#f59e0b',purple:'#8b5cf6',cyan:'#06b6d4',orange:'#f97316',grid:'rgba(255,255,255,0.04)',text:'#64748b'}
+  : {blue:'#2563eb',teal:'#0d9488',green:'#16a34a',rose:'#e11d48',amber:'#d97706',purple:'#7c3aed',cyan:'#0891b2',orange:'#ea580c',grid:'rgba(0,0,0,0.05)',text:'#94a3b8'};
+}
+function chartOpts(extra={}){
+  const c=cc();
+  return {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:c.text,font:{size:11,family:'Plus Jakarta Sans'}},grid:{color:c.grid},border:{color:'transparent'}},y:{ticks:{color:c.text,font:{size:11}},grid:{color:c.grid},border:{color:'transparent'}}},...extra};
+}
+
+// ══════════════════════════════════════════════════
+// YEAR HELPERS
+// ══════════════════════════════════════════════════
+function getYears(t){ return [...new Set(db[t].map(r=>r.tahun))].sort().reverse(); }
+function allYears(){ return [...new Set([...db.dv3,...db.ppm,...db.kontraktor].map(r=>r.tahun))].sort().reverse(); }
+
+// ══════════════════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════════════════
+function renderDashboard() {
+  renderYearPills();
+  const yr = selectedYear;
+  const dv = yr==='all' ? db.dv3 : db.dv3.filter(r=>r.tahun==yr);
+  const pm = yr==='all' ? db.ppm : db.ppm.filter(r=>r.tahun==yr);
+  const kn = yr==='all' ? db.kontraktor : db.kontraktor.filter(r=>r.tahun==yr);
+  const dS=dv.reduce((a,r)=>a+(r.siap||0),0), dT=dv.reduce((a,r)=>a+(r.takSiap||0),0);
+  const pS=pm.reduce((a,r)=>a+(r.siap||0),0), pT=pm.reduce((a,r)=>a+(r.takSiap||0),0);
+  const dTot=dS+dT, pTot=pS+pT;
+  const dPct=dTot?Math.round(dS/dTot*100):0, pPct=pTot?Math.round(pS/pTot*100):0;
+  const kD=kn.reduce((a,r)=>a+(r.jumlahDoket||0),0), kRM=kn.reduce((a,r)=>a+(r.jumlahRm||0),0);
+  const c=cc();
+
+  document.getElementById('dash-metrics').innerHTML = `
+    <div class="metric-card mc-blue"><div class="metric-icon-wrap mi-blue"><i class="fas fa-file-invoice"></i></div><div class="metric-value">${dTot}</div><div class="metric-label"><i class="fas fa-folder" style="margin-right:4px;"></i>Jumlah Doket DV3</div><div class="metric-sub"><i class="fas fa-check" style="color:var(--accent-green);"></i> ${dS} siap · <i class="fas fa-xmark" style="color:var(--accent-rose);"></i> ${dT} tak siap</div></div>
+    <div class="metric-card mc-green"><div class="metric-icon-wrap mi-green"><i class="fas fa-chart-pie"></i></div><div class="metric-value">${dPct}%</div><div class="metric-label"><i class="fas fa-percent" style="margin-right:4px;"></i>% Siap DV3</div><div class="prog-bar"><div class="prog-fill ${dPct>=80?'pf-green':'pf-rose'}" style="width:${dPct}%"></div></div></div>
+    <div class="metric-card mc-teal"><div class="metric-icon-wrap mi-teal"><i class="fas fa-screwdriver-wrench"></i></div><div class="metric-value">${pTot}</div><div class="metric-label"><i class="fas fa-calendar-check" style="margin-right:4px;"></i>Jumlah PPM</div><div class="metric-sub"><i class="fas fa-check" style="color:var(--accent-green);"></i> ${pS} siap · <i class="fas fa-xmark" style="color:var(--accent-rose);"></i> ${pT} tak siap</div></div>
+    <div class="metric-card mc-amber"><div class="metric-icon-wrap mi-amber"><i class="fas fa-gauge-high"></i></div><div class="metric-value">${pPct}%</div><div class="metric-label"><i class="fas fa-percent" style="margin-right:4px;"></i>% Siap PPM</div><div class="prog-bar"><div class="prog-fill ${pPct>=80?'pf-green':'pf-rose'}" style="width:${pPct}%"></div></div></div>
+    <div class="metric-card mc-purple"><div class="metric-icon-wrap mi-purple"><i class="fas fa-helmet-safety"></i></div><div class="metric-value">${kD}</div><div class="metric-label"><i class="fas fa-file-contract" style="margin-right:4px;"></i>Doket Kontraktor</div></div>
+    <div class="metric-card mc-rose"><div class="metric-icon-wrap mi-cyan" style="background:rgba(6,182,212,.15);color:var(--accent-cyan);"><i class="fas fa-money-bill-wave"></i></div><div class="metric-value" style="font-size:22px;">RM${(kRM/1000).toFixed(1)}k</div><div class="metric-label"><i class="fas fa-coins" style="margin-right:4px;"></i>Nilai Kontraktor</div></div>
+  `;
+
+  // DV3 bar
+  const dGrp={};
+  dv.forEach(r=>{if(!dGrp[r.penyenggara])dGrp[r.penyenggara]={s:0,t:0};dGrp[r.penyenggara].s+=r.siap||0;dGrp[r.penyenggara].t+=r.takSiap||0;});
+  const dLb=Object.keys(dGrp);
+  dc('dv3Bar');
+  charts['dv3Bar']=new Chart(document.getElementById('cDv3Bar'),{type:'bar',data:{labels:dLb,datasets:[{label:'Siap',data:dLb.map(k=>dGrp[k].s),backgroundColor:c.teal,borderRadius:5,borderSkipped:false},{label:'Tak Siap',data:dLb.map(k=>dGrp[k].t),backgroundColor:c.rose,borderRadius:5,borderSkipped:false}]},options:chartOpts()});
+
+  // PPM bar by month
+  const visMon=MONTHS.filter(m=>pm.some(r=>r.bulan===m));
+  dc('ppmBar');
+  charts['ppmBar']=new Chart(document.getElementById('cPpmBar'),{type:'bar',data:{labels:visMon.map(m=>m.substring(0,3)),datasets:[{label:'Siap',data:visMon.map(m=>pm.filter(r=>r.bulan===m).reduce((a,r)=>a+(r.siap||0),0)),backgroundColor:c.blue,borderRadius:5,borderSkipped:false},{label:'Tak Siap',data:visMon.map(m=>pm.filter(r=>r.bulan===m).reduce((a,r)=>a+(r.takSiap||0),0)),backgroundColor:c.amber,borderRadius:5,borderSkipped:false}]},options:chartOpts()});
+
+  // Doughnuts
+  dc('dv3Dough');
+  charts['dv3Dough']=new Chart(document.getElementById('cDv3Dough'),{type:'doughnut',data:{labels:['Siap','Tak Siap'],datasets:[{data:[dS,dT],backgroundColor:[c.green,c.rose],borderWidth:0,hoverOffset:4}]},options:{responsive:true,maintainAspectRatio:false,cutout:'74%',plugins:{legend:{display:false}}}});
+  document.getElementById('dv3-dough-legend').innerHTML=`<span style="display:flex;align-items:center;gap:5px;"><span style="width:9px;height:9px;border-radius:2px;background:${c.green};"></span>Siap ${dPct}%</span><span style="display:flex;align-items:center;gap:5px;"><span style="width:9px;height:9px;border-radius:2px;background:${c.rose};"></span>Tak Siap ${100-dPct}%</span>`;
+
+  dc('ppmDough');
+  charts['ppmDough']=new Chart(document.getElementById('cPpmDough'),{type:'doughnut',data:{labels:['Siap','Tak Siap'],datasets:[{data:[pS,pT],backgroundColor:[c.blue,c.amber],borderWidth:0,hoverOffset:4}]},options:{responsive:true,maintainAspectRatio:false,cutout:'74%',plugins:{legend:{display:false}}}});
+  document.getElementById('ppm-dough-legend').innerHTML=`<span style="display:flex;align-items:center;gap:5px;"><span style="width:9px;height:9px;border-radius:2px;background:${c.blue};"></span>Siap ${pPct}%</span><span style="display:flex;align-items:center;gap:5px;"><span style="width:9px;height:9px;border-radius:2px;background:${c.amber};"></span>Tak Siap ${100-pPct}%</span>`;
+
+  // Kontraktor RM
+  const kGrp={};
+  kn.forEach(r=>{if(!kGrp[r.kontraktor])kGrp[r.kontraktor]=0;kGrp[r.kontraktor]+=r.jumlahRm||0;});
+  const kLb=Object.keys(kGrp);
+  dc('konRM');
+  charts['konRM']=new Chart(document.getElementById('cKonRM'),{type:'bar',data:{labels:kLb.map(l=>l.length>16?l.substring(0,16)+'…':l),datasets:[{label:'RM',data:kLb.map(k=>kGrp[k]),backgroundColor:c.purple,borderRadius:5}]},options:chartOpts({scales:{x:{ticks:{color:c.text,font:{size:10}},grid:{color:c.grid},border:{color:'transparent'}},y:{ticks:{color:c.text,callback:v=>'RM'+(v>=1000?(v/1000).toFixed(0)+'k':v)},grid:{color:c.grid},border:{color:'transparent'}}}})});
+
+  // Ranking
+  const rnk = dLb.map(k=>({name:k,pct:dGrp[k].s+dGrp[k].t?Math.round(dGrp[k].s/(dGrp[k].s+dGrp[k].t)*100):0})).sort((a,b)=>b.pct-a.pct);
+  const rankColors=['#f59e0b','#94a3b8','#cd7f32'];
+  document.getElementById('ranking-list').innerHTML = rnk.length ? rnk.map((r,i)=>`
+    <div class="rank-item">
+      <div class="rank-num" style="background:${i<3?rankColors[i]:'var(--bg-hover)'};color:${i<3?'#1a1a1a':'var(--text-muted)'};">${i+1}</div>
+      <div class="rank-name">${r.name}</div>
+      <div class="rank-bar-wrap"><div class="prog-bar" style="flex:1;margin:0;"><div class="prog-fill ${r.pct>=80?'pf-green':r.pct>=50?'pf-blue':'pf-rose'}" style="width:${r.pct}%"></div></div></div>
+      <span class="rank-pct" style="color:${r.pct>=80?'var(--accent-green)':r.pct>=50?'var(--accent-blue)':'var(--accent-rose)'};">${r.pct}%</span>
+    </div>`).join('') : '<div style="color:var(--text-muted);font-size:13px;text-align:center;padding:20px;">Tiada data</div>';
+}
+
+function renderYearPills(){
+  const yrs=allYears();
+  document.getElementById('dash-year-pills').innerHTML=`<div class="year-pill ${selectedYear==='all'?'active':''}" onclick="selectYear('all')"><i class="fas fa-layer-group" style="font-size:10px;"></i> Semua</div>`+yrs.map(y=>`<div class="year-pill ${selectedYear==y?'active':''}" onclick="selectYear('${y}')">${y}</div>`).join('');
+}
+function selectYear(y){ selectedYear=y; renderDashboard(); }
+
+// ══════════════════════════════════════════════════
+// DV3
+// ══════════════════════════════════════════════════
+function renderDv3(){
+  const fy=document.getElementById('dv3-fy').value;
+  const fp=document.getElementById('dv3-fp').value;
+  const fs=(document.getElementById('dv3-fs').value||'').toLowerCase();
+  fillSel('dv3-fy',getYears('dv3'),fy);
+  fillSel('dv3-fp',[...new Set(db.dv3.map(r=>r.penyenggara))].sort(),fp);
+  let data=db.dv3.filter(r=>(!fy||r.tahun==fy)&&(!fp||r.penyenggara===fp)&&(!fs||r.penyenggara.toLowerCase().includes(fs)));
+  const tS=data.reduce((a,r)=>a+(r.siap||0),0),tT=data.reduce((a,r)=>a+(r.takSiap||0),0),tot=tS+tT;
+  const pct=tot?Math.round(tS/tot*100):0;
+  const c=cc();
+  document.getElementById('dv3-count').textContent=data.length;
+  document.getElementById('dv3-metrics').innerHTML=`
+    <div class="metric-card mc-blue"><div class="metric-icon-wrap mi-blue"><i class="fas fa-file-lines"></i></div><div class="metric-value">${tot}</div><div class="metric-label"><i class="fas fa-folder-open" style="margin-right:4px;"></i>Jumlah Doket</div></div>
+    <div class="metric-card mc-green"><div class="metric-icon-wrap mi-green"><i class="fas fa-circle-check"></i></div><div class="metric-value">${tS}</div><div class="metric-label"><i class="fas fa-check-double" style="margin-right:4px;"></i>Siap</div></div>
+    <div class="metric-card mc-rose"><div class="metric-icon-wrap mi-rose"><i class="fas fa-circle-xmark"></i></div><div class="metric-value">${tT}</div><div class="metric-label"><i class="fas fa-hourglass-half" style="margin-right:4px;"></i>Tak Siap</div></div>
+    <div class="metric-card mc-amber"><div class="metric-icon-wrap mi-amber"><i class="fas fa-percent"></i></div><div class="metric-value">${pct}%</div><div class="metric-label"><i class="fas fa-gauge" style="margin-right:4px;"></i>% Siap</div><div class="prog-bar"><div class="prog-fill ${pct>=80?'pf-green':'pf-rose'}" style="width:${pct}%"></div></div></div>
+  `;
+  const grp={};data.forEach(r=>{if(!grp[r.penyenggara])grp[r.penyenggara]={s:0,t:0};grp[r.penyenggara].s+=r.siap||0;grp[r.penyenggara].t+=r.takSiap||0;});
+  const lb=Object.keys(grp);
+  dc('dv3TabBar');
+  charts['dv3TabBar']=new Chart(document.getElementById('cDv3TabBar'),{type:'bar',data:{labels:lb,datasets:[{label:'Siap',data:lb.map(k=>grp[k].s),backgroundColor:c.teal,borderRadius:5},{label:'Tak Siap',data:lb.map(k=>grp[k].t),backgroundColor:c.rose,borderRadius:5}]},options:chartOpts()});
+  const tYrs=getYears('dv3');
+  dc('dv3Trend');
+  charts['dv3Trend']=new Chart(document.getElementById('cDv3Trend'),{type:'line',data:{labels:tYrs,datasets:[{label:'Jumlah Doket',data:tYrs.map(y=>db.dv3.filter(r=>r.tahun==y).reduce((a,r)=>a+(r.siap||0)+(r.takSiap||0),0)),borderColor:c.blue,backgroundColor:c.blue+'20',fill:true,tension:.4,pointBackgroundColor:c.blue,pointRadius:5}]},options:chartOpts()});
+
+  const tbody=document.getElementById('dv3-tbody');
+  if(!data.length){tbody.innerHTML=`<tr class="empty-row"><td colspan="9"><div class="empty-icon"><i class="fas fa-inbox"></i></div>Tiada rekod ditemui</td></tr>`;return;}
+  tbody.innerHTML=data.map((r,i)=>{
+    const tot=(r.siap||0)+(r.takSiap||0);
+    const p=tot?Math.round((r.siap||0)/tot*100):0;
+    const ri=db.dv3.indexOf(r);
+    const hasRow=r._row?true:false;
+    return `<tr>
+      <td style="color:var(--text-muted);font-size:12px;">${i+1}</td>
+      <td><span class="badge bdg-blue"><i class="fas fa-calendar-days"></i>${r.tahun}</span></td>
+      <td style="font-weight:700;"><i class="fas fa-user-tie" style="color:var(--text-muted);font-size:11px;margin-right:5px;"></i>${r.penyenggara}</td>
+      <td><span class="badge bdg-rose"><i class="fas fa-xmark"></i>${r.takSiap||0}</span></td>
+      <td><span class="badge bdg-green"><i class="fas fa-check"></i>${r.siap||0}</span></td>
+      <td style="font-weight:700;font-family:'JetBrains Mono',monospace;">${tot}</td>
+      <td><div style="display:flex;align-items:center;gap:8px;min-width:90px;">
+        <div class="prog-bar" style="flex:1;margin:0;"><div class="prog-fill ${p>=80?'pf-green':p>=50?'pf-blue':'pf-rose'}" style="width:${p}%"></div></div>
+        <span style="font-size:12px;font-weight:700;color:${p>=80?'var(--accent-green)':p>=50?'var(--accent-blue)':'var(--accent-rose)'};">${p}%</span>
+      </div></td>
+      <td>${hasRow?`<span class="badge bdg-green" title="Row ${r._row}"><i class="fas fa-database"></i>${r._row}</span>`:`<span class="badge bdg-gray"><i class="fas fa-laptop"></i>Tempatan</span>`}</td>
+      <td><div class="row-actions">
+        <button class="act-btn edit" onclick="openEditModal('dv3',${ri})" title="Edit"><i class="fas fa-pen-to-square"></i></button>
+        <button class="act-btn del" onclick="confirmDelete('dv3',${ri})" title="Padam"><i class="fas fa-trash-can"></i></button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════
+// PPM
+// ══════════════════════════════════════════════════
+function renderPpm(){
+  const fm=document.getElementById('ppm-fm').value,fy=document.getElementById('ppm-fy').value,fp=document.getElementById('ppm-fp').value;
+  const fs=(document.getElementById('ppm-fs').value||'').toLowerCase();
+  fillSel('ppm-fy',getYears('ppm'),fy);
+  fillSel('ppm-fp',[...new Set(db.ppm.map(r=>r.penyenggara))].sort(),fp);
+  let data=db.ppm.filter(r=>(!fm||r.bulan===fm)&&(!fy||r.tahun==fy)&&(!fp||r.penyenggara===fp)&&(!fs||r.penyenggara.toLowerCase().includes(fs)));
+  const tS=data.reduce((a,r)=>a+(r.siap||0),0),tT=data.reduce((a,r)=>a+(r.takSiap||0),0),tot=tS+tT;
+  const pct=tot?Math.round(tS/tot*100):0;
+  const c=cc();
+  document.getElementById('ppm-count').textContent=data.length;
+  document.getElementById('ppm-metrics').innerHTML=`
+    <div class="metric-card mc-teal"><div class="metric-icon-wrap mi-teal"><i class="fas fa-screwdriver-wrench"></i></div><div class="metric-value">${tot}</div><div class="metric-label"><i class="fas fa-list-check" style="margin-right:4px;"></i>Jumlah PPM</div></div>
+    <div class="metric-card mc-green"><div class="metric-icon-wrap mi-green"><i class="fas fa-circle-check"></i></div><div class="metric-value">${tS}</div><div class="metric-label"><i class="fas fa-check-double" style="margin-right:4px;"></i>Siap</div></div>
+    <div class="metric-card mc-rose"><div class="metric-icon-wrap mi-rose"><i class="fas fa-circle-xmark"></i></div><div class="metric-value">${tT}</div><div class="metric-label"><i class="fas fa-hourglass-half" style="margin-right:4px;"></i>Tak Siap</div></div>
+    <div class="metric-card mc-amber"><div class="metric-icon-wrap mi-amber"><i class="fas fa-percent"></i></div><div class="metric-value">${pct}%</div><div class="metric-label"><i class="fas fa-gauge" style="margin-right:4px;"></i>% Siap</div><div class="prog-bar"><div class="prog-fill ${pct>=80?'pf-green':'pf-rose'}" style="width:${pct}%"></div></div></div>
+  `;
+  const grp={};data.forEach(r=>{if(!grp[r.penyenggara])grp[r.penyenggara]={s:0,t:0};grp[r.penyenggara].s+=r.siap||0;grp[r.penyenggara].t+=r.takSiap||0;});
+  const lb=Object.keys(grp);
+  dc('ppmTabBar');
+  charts['ppmTabBar']=new Chart(document.getElementById('cPpmTabBar'),{type:'bar',data:{labels:lb,datasets:[{label:'Siap',data:lb.map(k=>grp[k].s),backgroundColor:c.blue,borderRadius:5},{label:'Tak Siap',data:lb.map(k=>grp[k].t),backgroundColor:c.amber,borderRadius:5}]},options:chartOpts()});
+  const visMon=MONTHS.filter(m=>data.some(r=>r.bulan===m));
+  dc('ppmTrend');
+  charts['ppmTrend']=new Chart(document.getElementById('cPpmTrend'),{type:'line',data:{labels:visMon.map(m=>m.substring(0,3)),datasets:[{label:'Jumlah PPM',data:visMon.map(m=>data.filter(r=>r.bulan===m).reduce((a,r)=>a+(r.siap||0)+(r.takSiap||0),0)),borderColor:c.teal,backgroundColor:c.teal+'20',fill:true,tension:.4,pointBackgroundColor:c.teal,pointRadius:5}]},options:chartOpts()});
+
+  const tbody=document.getElementById('ppm-tbody');
+  if(!data.length){tbody.innerHTML=`<tr class="empty-row"><td colspan="10"><div class="empty-icon"><i class="fas fa-inbox"></i></div>Tiada rekod ditemui</td></tr>`;return;}
+  tbody.innerHTML=data.map((r,i)=>{
+    const tot=(r.siap||0)+(r.takSiap||0),p=tot?Math.round((r.siap||0)/tot*100):0;
+    const ri=db.ppm.indexOf(r);
+    const hasRow=r._row?true:false;
+    return `<tr>
+      <td style="color:var(--text-muted);font-size:12px;">${i+1}</td>
+      <td><span class="badge bdg-teal"><i class="fas fa-calendar-week"></i>${r.bulan}</span></td>
+      <td><span class="badge bdg-blue"><i class="fas fa-calendar"></i>${r.tahun}</span></td>
+      <td style="font-weight:700;"><i class="fas fa-user-tie" style="color:var(--text-muted);font-size:11px;margin-right:5px;"></i>${r.penyenggara}</td>
+      <td><span class="badge bdg-rose"><i class="fas fa-xmark"></i>${r.takSiap||0}</span></td>
+      <td><span class="badge bdg-green"><i class="fas fa-check"></i>${r.siap||0}</span></td>
+      <td style="font-weight:700;font-family:'JetBrains Mono',monospace;">${tot}</td>
+      <td><div style="display:flex;align-items:center;gap:8px;min-width:90px;"><div class="prog-bar" style="flex:1;margin:0;"><div class="prog-fill ${p>=80?'pf-green':p>=50?'pf-blue':'pf-rose'}" style="width:${p}%"></div></div><span style="font-size:12px;font-weight:700;color:${p>=80?'var(--accent-green)':p>=50?'var(--accent-blue)':'var(--accent-rose)'};">${p}%</span></div></td>
+      <td>${hasRow?`<span class="badge bdg-green" title="Row ${r._row}"><i class="fas fa-database"></i>${r._row}</span>`:`<span class="badge bdg-gray"><i class="fas fa-laptop"></i>Tempatan</span>`}</td>
+      <td><div class="row-actions">
+        <button class="act-btn edit" onclick="openEditModal('ppm',${ri})" title="Edit"><i class="fas fa-pen-to-square"></i></button>
+        <button class="act-btn del" onclick="confirmDelete('ppm',${ri})" title="Padam"><i class="fas fa-trash-can"></i></button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════
+// KONTRAKTOR
+// ══════════════════════════════════════════════════
+function renderKon(){
+  const fm=document.getElementById('kon-fm').value,fy=document.getElementById('kon-fy').value;
+  const fk=document.getElementById('kon-fk').value,fz=document.getElementById('kon-fz').value;
+  const fs=(document.getElementById('kon-fs').value||'').toLowerCase();
+  fillSel('kon-fy',getYears('kontraktor'),fy);
+  fillSel('kon-fk',[...new Set(db.kontraktor.map(r=>r.kontraktor))].sort(),fk);
+  fillSel('kon-fz',[...new Set(db.kontraktor.map(r=>r.zon))].sort(),fz);
+  let data=db.kontraktor.filter(r=>(!fm||r.bulan===fm)&&(!fy||r.tahun==fy)&&(!fk||r.kontraktor===fk)&&(!fz||r.zon===fz)&&(!fs||r.kontraktor.toLowerCase().includes(fs)||r.zon.toLowerCase().includes(fs)));
+  const tD=data.reduce((a,r)=>a+(r.jumlahDoket||0),0),tRM=data.reduce((a,r)=>a+(r.jumlahRm||0),0);
+  const c=cc();
+  document.getElementById('kon-count').textContent=data.length;
+  document.getElementById('kon-metrics').innerHTML=`
+    <div class="metric-card mc-blue"><div class="metric-icon-wrap mi-blue"><i class="fas fa-file-contract"></i></div><div class="metric-value">${tD}</div><div class="metric-label"><i class="fas fa-file-lines" style="margin-right:4px;"></i>Jumlah Doket</div></div>
+    <div class="metric-card mc-purple"><div class="metric-icon-wrap mi-purple"><i class="fas fa-money-bill-wave"></i></div><div class="metric-value" style="font-size:22px;">RM${(tRM/1000).toFixed(1)}k</div><div class="metric-label"><i class="fas fa-coins" style="margin-right:4px;"></i>Jumlah Nilai</div></div>
+    <div class="metric-card mc-teal"><div class="metric-icon-wrap mi-teal"><i class="fas fa-helmet-safety"></i></div><div class="metric-value">${[...new Set(data.map(r=>r.kontraktor))].length}</div><div class="metric-label"><i class="fas fa-building-user" style="margin-right:4px;"></i>Bil. Kontraktor</div></div>
+    <div class="metric-card mc-amber"><div class="metric-icon-wrap mi-amber"><i class="fas fa-map-location-dot"></i></div><div class="metric-value">${[...new Set(data.map(r=>r.zon))].length}</div><div class="metric-label"><i class="fas fa-map-pin" style="margin-right:4px;"></i>Bilangan Zon</div></div>
+  `;
+  const kGrp={};data.forEach(r=>{if(!kGrp[r.kontraktor])kGrp[r.kontraktor]=0;kGrp[r.kontraktor]+=r.jumlahDoket||0;});
+  const kLb=Object.keys(kGrp);
+  dc('konBar');
+  charts['konBar']=new Chart(document.getElementById('cKonBar'),{type:'bar',data:{labels:kLb.map(l=>l.length>18?l.substring(0,18)+'…':l),datasets:[{label:'Doket',data:kLb.map(k=>kGrp[k]),backgroundColor:c.purple,borderRadius:5}]},options:chartOpts()});
+  const zGrp={};data.forEach(r=>{if(!zGrp[r.zon])zGrp[r.zon]=0;zGrp[r.zon]+=r.jumlahRm||0;});
+  const zLb=Object.keys(zGrp);
+  dc('konZon');
+  charts['konZon']=new Chart(document.getElementById('cKonZon'),{type:'doughnut',data:{labels:zLb,datasets:[{data:zLb.map(z=>zGrp[z]),backgroundColor:[c.blue,c.teal,c.amber,c.rose,c.purple,c.cyan],borderWidth:0,hoverOffset:4}]},options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{display:true,position:'bottom',labels:{color:c.text,font:{size:11,family:'Plus Jakarta Sans'},padding:10,boxWidth:10}}}}});
+
+  const tbody=document.getElementById('kon-tbody');
+  if(!data.length){tbody.innerHTML=`<tr class="empty-row"><td colspan="9"><div class="empty-icon"><i class="fas fa-inbox"></i></div>Tiada rekod ditemui</td></tr>`;return;}
+  tbody.innerHTML=data.map((r,i)=>{
+    const ri=db.kontraktor.indexOf(r);
+    const hasRow=r._row?true:false;
+    return `<tr>
+      <td style="color:var(--text-muted);font-size:12px;">${i+1}</td>
+      <td><span class="badge bdg-teal"><i class="fas fa-calendar-week"></i>${r.bulan}</span></td>
+      <td><span class="badge bdg-blue"><i class="fas fa-calendar"></i>${r.tahun}</span></td>
+      <td style="font-weight:700;"><i class="fas fa-building" style="color:var(--text-muted);font-size:11px;margin-right:5px;"></i>${r.kontraktor}</td>
+      <td><span class="badge bdg-amber"><i class="fas fa-map-pin"></i>${r.zon}</span></td>
+      <td style="font-weight:700;font-family:'JetBrains Mono',monospace;">${r.jumlahDoket||0}</td>
+      <td style="font-weight:700;color:var(--accent-green);"><i class="fas fa-coins" style="font-size:11px;margin-right:4px;"></i>RM ${(r.jumlahRm||0).toLocaleString()}</td>
+      <td>${hasRow?`<span class="badge bdg-green" title="Row ${r._row}"><i class="fas fa-database"></i>${r._row}</span>`:`<span class="badge bdg-gray"><i class="fas fa-laptop"></i>Tempatan</span>`}</td>
+      <td><div class="row-actions">
+        <button class="act-btn edit" onclick="openEditModal('kontraktor',${ri})" title="Edit"><i class="fas fa-pen-to-square"></i></button>
+        <button class="act-btn del" onclick="confirmDelete('kontraktor',${ri})" title="Padam"><i class="fas fa-trash-can"></i></button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════
+// FILTER HELPERS
+// ══════════════════════════════════════════════════
+function fillSel(id,vals,sel){
+  const el=document.getElementById(id);if(!el)return;
+  el.innerHTML='<option value="">Semua</option>'+vals.map(v=>`<option ${v==sel?'selected':''}>${v}</option>`).join('');
+}
+function clearFilters(t){
+  if(t==='dv3'){document.getElementById('dv3-fy').value='';document.getElementById('dv3-fp').value='';document.getElementById('dv3-fs').value='';renderDv3();}
+  if(t==='ppm'){document.getElementById('ppm-fm').value='';document.getElementById('ppm-fy').value='';document.getElementById('ppm-fp').value='';document.getElementById('ppm-fs').value='';renderPpm();}
+  if(t==='kontraktor'){document.getElementById('kon-fm').value='';document.getElementById('kon-fy').value='';document.getElementById('kon-fk').value='';document.getElementById('kon-fz').value='';document.getElementById('kon-fs').value='';renderKon();}
+}
+
+// ══════════════════════════════════════════════════
+// MODAL — ADD / EDIT
+// ══════════════════════════════════════════════════
+function openAddModal(type){
+  modalType=type; editCtx={type:null,index:null};
+  const names={dv3:cfg.tabDv3,ppm:cfg.tabPpm,kontraktor:cfg.tabKon};
+  document.getElementById('modal-title').textContent='Tambah Rekod '+names[type];
+  document.getElementById('modal-subtitle').textContent='Rekod baru akan ditambah ke sistem & Google Sheets';
+  document.getElementById('modal-icon').className='modal-icon mi-add';
+  document.getElementById('modal-icon').innerHTML='<i class="fas fa-plus-circle"></i>';
+  document.getElementById('modal-body').innerHTML=buildForm(type,null);
+  document.getElementById('modal-add').classList.add('open');
+  if(type==='dv3'||type==='ppm') setTimeout(()=>autoCalc(type),50);
+}
+function openEditModal(type,idx){
+  modalType=type; editCtx={type,index:idx};
+  const r=db[type][idx];
+  const names={dv3:cfg.tabDv3,ppm:cfg.tabPpm,kontraktor:cfg.tabKon};
+  document.getElementById('modal-title').textContent='Edit Rekod '+names[type];
+  document.getElementById('modal-subtitle').textContent=r._row?`Akan kemaskini baris ${r._row} dalam Google Sheets`:'Rekod tempatan — akan ditambah ke Google Sheets';
+  document.getElementById('modal-icon').className='modal-icon mi-edit';
+  document.getElementById('modal-icon').innerHTML='<i class="fas fa-pen-to-square"></i>';
+  document.getElementById('modal-body').innerHTML=buildForm(type,r);
+  document.getElementById('modal-add').classList.add('open');
+  if(type==='dv3'||type==='ppm') setTimeout(()=>autoCalc(type),50);
+}
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+function buildForm(type,r){
+  const penyList=[...new Set([...db.dv3,...db.ppm].map(x=>x.penyenggara).filter(Boolean))].sort();
+  const konList=[...new Set(db.kontraktor.map(x=>x.kontraktor).filter(Boolean))].sort();
+  const mOpts=MONTHS.map(m=>`<option ${r&&r.bulan===m?'selected':''}>${m}</option>`).join('');
+
+  if(type==='dv3') return `
+    <div class="form-row">
+      <div class="form-group"><label class="form-label"><i class="fas fa-calendar-days"></i>Tahun</label><input id="f-tahun" class="form-control" type="number" value="${r?r.tahun:new Date().getFullYear()}" min="2000" max="2099"></div>
+      <div class="form-group"><label class="form-label"><i class="fas fa-user-tie"></i>Penyenggara</label>
+        <input id="f-penyenggara" class="form-control" list="peny-dl" value="${r?r.penyenggara:''}" placeholder="Nama penyenggara...">
+        <datalist id="peny-dl">${penyList.map(p=>`<option value="${p}">`).join('')}</datalist>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label"><i class="fas fa-circle-xmark" style="color:var(--accent-rose);"></i>Tak Siap</label><input id="f-taksiap" class="form-control" type="number" min="0" value="${r?r.takSiap:0}" oninput="autoCalc('dv3')"></div>
+      <div class="form-group"><label class="form-label"><i class="fas fa-circle-check" style="color:var(--accent-green);"></i>Siap</label><input id="f-siap" class="form-control" type="number" min="0" value="${r?r.siap:0}" oninput="autoCalc('dv3')"></div>
+    </div>
+    <div class="form-group"><label class="form-label"><i class="fas fa-calculator"></i>Jumlah Doket (Auto-kira)</label><input id="f-jumlah" class="form-control" type="number" value="${r?(r.siap||0)+(r.takSiap||0):0}" readonly><div class="auto-calc-note"><i class="fas fa-wand-magic-sparkles"></i> Dikira automatik: Siap + Tak Siap</div></div>
+  `;
+  if(type==='ppm') return `
+    <div class="form-row">
+      <div class="form-group"><label class="form-label"><i class="fas fa-calendar-week"></i>Bulan</label><select id="f-bulan" class="form-control">${mOpts}</select></div>
+      <div class="form-group"><label class="form-label"><i class="fas fa-calendar-days"></i>Tahun</label><input id="f-tahun" class="form-control" type="number" value="${r?r.tahun:new Date().getFullYear()}" min="2000" max="2099"></div>
+    </div>
+    <div class="form-group"><label class="form-label"><i class="fas fa-user-tie"></i>Penyenggara</label>
+      <input id="f-penyenggara" class="form-control" list="peny-dl2" value="${r?r.penyenggara:''}" placeholder="Nama penyenggara...">
+      <datalist id="peny-dl2">${penyList.map(p=>`<option value="${p}">`).join('')}</datalist>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label"><i class="fas fa-circle-xmark" style="color:var(--accent-rose);"></i>Tak Siap</label><input id="f-taksiap" class="form-control" type="number" min="0" value="${r?r.takSiap:0}" oninput="autoCalc('ppm')"></div>
+      <div class="form-group"><label class="form-label"><i class="fas fa-circle-check" style="color:var(--accent-green);"></i>Siap</label><input id="f-siap" class="form-control" type="number" min="0" value="${r?r.siap:0}" oninput="autoCalc('ppm')"></div>
+    </div>
+    <div class="form-group"><label class="form-label"><i class="fas fa-calculator"></i>Jumlah PPM (Auto-kira)</label><input id="f-jumlah" class="form-control" type="number" value="${r?(r.siap||0)+(r.takSiap||0):0}" readonly><div class="auto-calc-note"><i class="fas fa-wand-magic-sparkles"></i> Dikira automatik: Siap + Tak Siap</div></div>
+  `;
+  if(type==='kontraktor') return `
+    <div class="form-row">
+      <div class="form-group"><label class="form-label"><i class="fas fa-calendar-week"></i>Bulan</label><select id="f-bulan" class="form-control">${mOpts}</select></div>
+      <div class="form-group"><label class="form-label"><i class="fas fa-calendar-days"></i>Tahun</label><input id="f-tahun" class="form-control" type="number" value="${r?r.tahun:new Date().getFullYear()}" min="2000" max="2099"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label"><i class="fas fa-building-user"></i>Kontraktor</label>
+        <input id="f-kon" class="form-control" list="kon-dl" value="${r?r.kontraktor:''}" placeholder="Nama kontraktor...">
+        <datalist id="kon-dl">${konList.map(k=>`<option value="${k}">`).join('')}</datalist>
+      </div>
+      <div class="form-group"><label class="form-label"><i class="fas fa-map-location-dot"></i>Zon</label><input id="f-zon" class="form-control" value="${r?r.zon:''}" placeholder="cth: Zon A"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label"><i class="fas fa-file-lines"></i>Jumlah Doket</label><input id="f-doket" class="form-control" type="number" min="0" value="${r?r.jumlahDoket:0}"></div>
+      <div class="form-group"><label class="form-label"><i class="fas fa-money-bill-wave"></i>Jumlah RM</label><input id="f-rm" class="form-control" type="number" min="0" step="0.01" value="${r?r.jumlahRm:0}"></div>
+    </div>
+  `;
+  return '';
+}
+
+function autoCalc(type){
+  const s=parseInt(document.getElementById('f-siap').value)||0;
+  const t=parseInt(document.getElementById('f-taksiap').value)||0;
+  const jEl=document.getElementById('f-jumlah');
+  if(jEl) jEl.value=s+t;
+}
+
+async function saveRecord(){
+  const type=modalType;
+  let rec={};
+  if(type==='dv3'){
+    const tak=parseInt(document.getElementById('f-taksiap').value)||0;
+    const siap=parseInt(document.getElementById('f-siap').value)||0;
+    rec={tahun:document.getElementById('f-tahun').value,penyenggara:document.getElementById('f-penyenggara').value.trim(),takSiap:tak,siap:siap};
+    if(!rec.tahun||!rec.penyenggara){toast('Sila lengkapkan semua medan!','error');return;}
+  } else if(type==='ppm'){
+    const tak=parseInt(document.getElementById('f-taksiap').value)||0;
+    const siap=parseInt(document.getElementById('f-siap').value)||0;
+    rec={bulan:document.getElementById('f-bulan').value,tahun:document.getElementById('f-tahun').value,penyenggara:document.getElementById('f-penyenggara').value.trim(),takSiap:tak,siap:siap};
+    if(!rec.tahun||!rec.penyenggara){toast('Sila lengkapkan semua medan!','error');return;}
+  } else if(type==='kontraktor'){
+    rec={bulan:document.getElementById('f-bulan').value,tahun:document.getElementById('f-tahun').value,kontraktor:document.getElementById('f-kon').value.trim(),zon:document.getElementById('f-zon').value.trim(),jumlahDoket:parseInt(document.getElementById('f-doket').value)||0,jumlahRm:parseFloat(document.getElementById('f-rm').value)||0};
+    if(!rec.tahun||!rec.kontraktor){toast('Sila lengkapkan semua medan!','error');return;}
+  }
+
+  const saveBtn=document.getElementById('modal-save-btn');
+  saveBtn.disabled=true; saveBtn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+
+  const isEdit = editCtx.index!==null;
+
+  if(isEdit){
+    const existing=db[type][editCtx.index];
+    if(existing._row){
+      // Update in Google Sheets
+      const url=getSheetUrl(type);
+      if(url){
+        try {
+          const sheetData=buildSheetData(type,rec);
+          await postToSheet(url,{action:'update',sheet:getSheetName(type),data:sheetData,rowNum:existing._row});
+          rec._row=existing._row;
+          toast('Rekod dikemaskini dalam Google Sheets!','success');
+        } catch(e){ toast('Dikemaskini tempatan (Sheets gagal: '+e.message+')','warning'); rec._row=existing._row; }
+      } else { rec._row=existing._row; toast('Rekod dikemaskini (tiada URL Sheets)','info'); }
+    } else {
+      // No sheet row — try to append
+      const result=await tryAppendToSheet(type,rec);
+      if(result) rec._row=result;
+      toast('Rekod dikemaskini!','success');
+    }
+    db[type][editCtx.index]=rec;
+  } else {
+    // New record — append to sheet
+    const result=await tryAppendToSheet(type,rec);
+    if(result){ rec._row=result; toast(`Rekod ditambah ke Google Sheets (baris ${result})!`,'success'); }
+    else toast('Rekod ditambah (tempatan)','info');
+    db[type].push(rec);
+  }
+
+  save();
+  closeModal('modal-add');
+  saveBtn.disabled=false; saveBtn.innerHTML='<i class="fas fa-floppy-disk"></i> Simpan';
+  if(type==='dv3') renderDv3();
+  if(type==='ppm') renderPpm();
+  if(type==='kontraktor') renderKon();
+  if(currentPage==='dashboard') renderDashboard();
+  renderUpdatePage();
+}
+
+// ══════════════════════════════════════════════════
+// DELETE
+// ══════════════════════════════════════════════════
+function confirmDelete(type,idx){
+  const r=db[type][idx];
+  document.getElementById('del-subtitle').textContent = r._row
+    ? `Rekod "${r.penyenggara||r.kontraktor||''}" (baris ${r._row}) akan dipadam dari sistem DAN Google Sheets.`
+    : `Rekod "${r.penyenggara||r.kontraktor||''}" akan dipadam dari sistem.`;
+  document.getElementById('del-confirm-btn').onclick=()=>{
+    deleteRecord(type,idx);
+    document.getElementById('modal-del').classList.remove('open');
+  };
+  document.getElementById('modal-del').classList.add('open');
+}
+
+async function deleteRecord(type,idx){
+  const r=db[type][idx];
+  if(r._row){
+    const url=getSheetUrl(type);
+    if(url){
+      try {
+        await postToSheet(url,{action:'delete',sheet:getSheetName(type),rowNum:r._row});
+        // Adjust _row for all records after deleted row
+        db[type].forEach(rec=>{ if(rec._row && rec._row>r._row) rec._row--; });
+        toast('Rekod dipadam dari Google Sheets!','success');
+      } catch(e){ toast('Dipadam tempatan (Sheets gagal)','warning'); }
+    }
+  } else toast('Rekod dipadam!','success');
+  db[type].splice(idx,1);
+  save();
+  if(type==='dv3') renderDv3();
+  if(type==='ppm') renderPpm();
+  if(type==='kontraktor') renderKon();
+  if(currentPage==='dashboard') renderDashboard();
+  renderUpdatePage();
+}
+
+// ══════════════════════════════════════════════════
+// GOOGLE SHEETS API
+// ══════════════════════════════════════════════════
+function getSheetUrl(type){ return type==='dv3'?cfg.sheetDv3:type==='ppm'?cfg.sheetPpm:cfg.sheetKon; }
+function getSheetName(type){ return type==='dv3'?cfg.tabDv3:type==='ppm'?cfg.tabPpm:cfg.tabKon; }
+
+function buildSheetData(type,rec){
+  if(type==='dv3') return {Tahun:rec.tahun,Penyenggara:rec.penyenggara,TakSiap:rec.takSiap,Siap:rec.siap};
+  if(type==='ppm') return {Bulan:rec.bulan,Tahun:rec.tahun,Penyenggara:rec.penyenggara,TakSiap:rec.takSiap,Siap:rec.siap};
+  if(type==='kontraktor') return {Bulan:rec.bulan,Tahun:rec.tahun,Kontraktor:rec.kontraktor,Zon:rec.zon,JumlahDoket:rec.jumlahDoket,JumlahRM:rec.jumlahRm};
+  return {};
+}
+
+async function tryAppendToSheet(type,rec){
+  const url=getSheetUrl(type);
+  if(!url) return null;
+  try {
+    const sheetData=buildSheetData(type,rec);
+    const res=await postToSheet(url,{action:'append',sheet:getSheetName(type),data:sheetData});
+    return res.rowNum||null;
+  } catch(e){ return null; }
+}
+
+async function postToSheet(url,payload){
+  const res=await fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
+  // no-cors returns opaque response — assume success
+  return {success:true};
+}
+
+async function fetchFromSheet(type){
+  const url=getSheetUrl(type);
+  if(!url) return false;
+  const fullUrl=url+(url.includes('?')?'&':'?')+'action=read&sheet='+encodeURIComponent(getSheetName(type));
+  const res=await fetch(fullUrl);
+  const json=await res.json();
+  if(!json.success) throw new Error(json.error||'Ralat tidak diketahui');
+  // Map sheet rows to local objects
+  const mapped=json.data.filter(r=>r.Penyenggara||r.Kontraktor).map(r=>{
+    if(type==='dv3') return {_row:r._row,tahun:String(r.Tahun||''),penyenggara:String(r.Penyenggara||''),takSiap:Number(r.TakSiap||0),siap:Number(r.Siap||0)};
+    if(type==='ppm') return {_row:r._row,bulan:String(r.Bulan||''),tahun:String(r.Tahun||''),penyenggara:String(r.Penyenggara||''),takSiap:Number(r.TakSiap||0),siap:Number(r.Siap||0)};
+    if(type==='kontraktor') return {_row:r._row,bulan:String(r.Bulan||''),tahun:String(r.Tahun||''),kontraktor:String(r.Kontraktor||''),zon:String(r.Zon||''),jumlahDoket:Number(r.JumlahDoket||0),jumlahRm:Number(r.JumlahRM||0)};
+    return r;
+  });
+  db[type]=mapped;
+  save();
+  return true;
+}
+
+// ══════════════════════════════════════════════════
+// SYNC FUNCTIONS
+// ══════════════════════════════════════════════════
+function setSyncState(state,label){
+  const dot=document.getElementById('sync-dot');
+  const lbl=document.getElementById('sync-label');
+  dot.className='sync-dot';
+  if(state==='connected'){dot.classList.add('connected');lbl.textContent=label||'Disambung';}
+  else if(state==='syncing'){dot.classList.add('syncing');lbl.textContent=label||'Segerak...';}
+  else if(state==='error'){dot.classList.add('error');lbl.textContent=label||'Ralat';}
+  else{lbl.textContent=label||'Tidak Disambung';}
+}
+
+async function syncTab(type){
+  const url=getSheetUrl(type);
+  if(!url){toast(`URL ${type.toUpperCase()} belum dikonfigurasi. Pergi ke Kemaskini Data.`,'warning');return;}
+  const btnId={dv3:'dv3-sync-btn',ppm:'ppm-sync-btn',kontraktor:'kon-sync-btn'}[type];
+  const btn=document.getElementById(btnId);
+  if(btn){btn.classList.add('syncing');btn.innerHTML='<i class="fas fa-rotate"></i> Segerak...';}
+  setSyncState('syncing','Segerak '+type.toUpperCase()+'...');
+  try {
+    await fetchFromSheet(type);
+    setSyncState('connected','Segerak '+new Date().toLocaleTimeString('ms-MY'));
+    document.getElementById('last-sync-time').innerHTML=`<i class="fas fa-clock-rotate-left"></i> Segerak: ${new Date().toLocaleTimeString('ms-MY')}`;
+    toast(`${type.toUpperCase()} berjaya disegerakkan dari Google Sheets!`,'success');
+    if(type==='dv3') renderDv3();
+    if(type==='ppm') renderPpm();
+    if(type==='kontraktor') renderKon();
+    if(currentPage==='dashboard') renderDashboard();
+    renderUpdatePage();
+  } catch(e){
+    setSyncState('error','Ralat Segerak');
+    toast(`Gagal segerak ${type.toUpperCase()}: ${e.message}`,'error');
+  }
+  if(btn){btn.classList.remove('syncing');btn.innerHTML='<i class="fas fa-rotate"></i> Segerak';}
+}
+
+async function manualSyncAll(){
+  const hasAny=cfg.sheetDv3||cfg.sheetPpm||cfg.sheetKon;
+  if(!hasAny){toast('Tiada Google Sheets dikonfigurasi. Pergi ke Kemaskini Data.','warning');navigate('update');return;}
+  const btns=['dash-sync-btn','update-sync-btn','global-sync-btn'];
+  btns.forEach(id=>{const b=document.getElementById(id);if(b){b.classList.add('syncing');b.innerHTML='<i class="fas fa-rotate"></i> Segerak...';}});
+  setSyncState('syncing','Segerak semua...');
+  let ok=0, fail=0;
+  const tabs=[cfg.sheetDv3?'dv3':null,cfg.sheetPpm?'ppm':null,cfg.sheetKon?'kontraktor':null].filter(Boolean);
+  for(const t of tabs){
+    try{ await fetchFromSheet(t); ok++; } catch(e){ fail++; }
+  }
+  setSyncState(fail===0&&ok>0?'connected':fail>0&&ok>0?'connected':'error', fail===0?`Segerak: ${new Date().toLocaleTimeString('ms-MY')}`:ok+' OK, '+fail+' gagal');
+  if(ok>0) toast(`${ok} tab berjaya disegerakkan${fail>0?', '+fail+' gagal':''}!`,fail===0?'success':'warning');
+  else toast('Semua segerak gagal. Semak URL dan deployment Apps Script.','error');
+  btns.forEach(id=>{const b=document.getElementById(id);if(b){b.classList.remove('syncing');b.innerHTML='<i class="fas fa-rotate"></i> Segerak'+(id==='update-sync-btn'?' Semua':'');}});
+  refreshAll();
+  document.getElementById('last-sync-time').innerHTML=`<i class="fas fa-clock-rotate-left"></i> Segerak: ${new Date().toLocaleTimeString('ms-MY')}`;
+}
+
+// ══════════════════════════════════════════════════
+// AUTO SYNC
+// ══════════════════════════════════════════════════
+function toggleAutoSync(){
+  cfg.autoSync=document.getElementById('auto-sync-toggle').checked;
+  save();
+  if(cfg.autoSync) startAutoSync(); else stopAutoSync();
+  toast(cfg.autoSync?'Auto-segerak diaktifkan':'Auto-segerak dimatikan', cfg.autoSync?'success':'info');
+}
+function updateAutoSyncInterval(){
+  cfg.autoSyncInterval=parseInt(document.getElementById('auto-sync-interval').value)||60000;
+  save();
+  if(cfg.autoSync){ stopAutoSync(); startAutoSync(); }
+}
+function startAutoSync(){
+  stopAutoSync();
+  autoSyncTimer=setInterval(manualSyncAll, cfg.autoSyncInterval);
+}
+function stopAutoSync(){
+  if(autoSyncTimer){ clearInterval(autoSyncTimer); autoSyncTimer=null; }
+}
+
+// ══════════════════════════════════════════════════
+// TEST CONNECTION
+// ══════════════════════════════════════════════════
+async function testSheetConnection(type){
+  const urlEl=document.getElementById('sheet-url-'+type);
+  const url=urlEl?urlEl.value.trim():'';
+  if(!url){toast('Sila masukkan URL terlebih dahulu!','error');return;}
+  const statusEl=document.getElementById('scc-'+type+'-status');
+  statusEl.innerHTML='<i class="fas fa-spinner fa-spin"></i> Menguji...';
+  try {
+    const testUrl=url+(url.includes('?')?'&':'?')+'action=read&sheet='+encodeURIComponent(getSheetName(type));
+    const res=await fetch(testUrl);
+    const json=await res.json();
+    if(json.success){
+      statusEl.innerHTML='<i class="fas fa-circle" style="font-size:8px;color:var(--accent-green);"></i> <span style="color:var(--accent-green);">Disambung ('+json.data.length+' baris)</span>';
+      document.getElementById('scc-'+type).classList.add('connected');
+      toast(`Disambung berjaya! ${json.data.length} rekod dijumpai.`,'success');
+    } else { throw new Error(json.error); }
+  } catch(e){
+    statusEl.innerHTML='<i class="fas fa-circle" style="font-size:8px;color:var(--accent-rose);"></i> <span style="color:var(--accent-rose);">Ralat: '+e.message+'</span>';
+    document.getElementById('scc-'+type).classList.remove('connected');
+    document.getElementById('scc-'+type).classList.add('error');
+    toast('Gagal disambung: '+e.message+'. Semak URL dan CORS Apps Script.','error');
+  }
+}
+
+// ══════════════════════════════════════════════════
+// SHEET URL SAVE
+// ══════════════════════════════════════════════════
+function saveSheetUrl(type){
+  const urlEl=document.getElementById('sheet-url-'+type);
+  const url=urlEl?urlEl.value.trim():'';
+  if(type==='dv3') cfg.sheetDv3=url;
+  if(type==='ppm') cfg.sheetPpm=url;
+  if(type==='kontraktor') cfg.sheetKon=url;
+  save();
+  updateSyncStatus();
+  toast('URL disimpan!','success');
+}
+
+function updateSyncStatus(){
+  const hasAny=cfg.sheetDv3||cfg.sheetPpm||cfg.sheetKon;
+  if(hasAny) setSyncState('connected','URL Dikonfigurasi');
+  else setSyncState('','Tidak Disambung');
+}
+
+// ══════════════════════════════════════════════════
+// UPDATE PAGE
+// ══════════════════════════════════════════════════
+function renderUpdatePage(){
+  document.getElementById('dv3-dc').innerHTML=`<i class="fas fa-database"></i> ${db.dv3.length} rekod tempatan`;
+  document.getElementById('ppm-dc').innerHTML=`<i class="fas fa-database"></i> ${db.ppm.length} rekod tempatan`;
+  document.getElementById('kon-dc').innerHTML=`<i class="fas fa-database"></i> ${db.kontraktor.length} rekod tempatan`;
+  // Restore saved URLs
+  const u1=document.getElementById('sheet-url-dv3'); if(u1&&!u1.value&&cfg.sheetDv3) u1.value=cfg.sheetDv3;
+  const u2=document.getElementById('sheet-url-ppm'); if(u2&&!u2.value&&cfg.sheetPpm) u2.value=cfg.sheetPpm;
+  const u3=document.getElementById('sheet-url-kon'); if(u3&&!u3.value&&cfg.sheetKon) u3.value=cfg.sheetKon;
+  document.getElementById('auto-sync-toggle').checked=cfg.autoSync;
+  document.getElementById('auto-sync-interval').value=cfg.autoSyncInterval;
+  // Update status indicators
+  if(cfg.sheetDv3) document.getElementById('scc-dv3-status').innerHTML='<i class="fas fa-circle" style="font-size:8px;color:var(--accent-amber);"></i> URL Tersimpan';
+  if(cfg.sheetPpm) document.getElementById('scc-ppm-status').innerHTML='<i class="fas fa-circle" style="font-size:8px;color:var(--accent-amber);"></i> URL Tersimpan';
+  if(cfg.sheetKon) document.getElementById('scc-kon-status').innerHTML='<i class="fas fa-circle" style="font-size:8px;color:var(--accent-amber);"></i> URL Tersimpan';
+}
+
+// ══════════════════════════════════════════════════
+// SETTINGS
+// ══════════════════════════════════════════════════
+function saveSettings(){
+  cfg.appTitle=document.getElementById('st-app-title').value||'Unit Elektrik JPPF';
+  cfg.tabDv3=document.getElementById('st-dv3').value||'DV3';
+  cfg.tabPpm=document.getElementById('st-ppm').value||'PPM';
+  cfg.tabKon=document.getElementById('st-kon').value||'Kontraktor';
+  applySettings();
+  save();
+  toast('Tetapan disimpan!','success');
+}
+function applySettings(){
+  document.getElementById('app-title-display').textContent=cfg.appTitle;
+  document.getElementById('nav-dv3-text').textContent=cfg.tabDv3;
+  document.getElementById('nav-ppm-text').textContent=cfg.tabPpm;
+  document.getElementById('nav-kon-text').textContent=cfg.tabKon;
+  document.getElementById('page-title-dv3').textContent='Tab '+cfg.tabDv3;
+  document.getElementById('page-title-ppm').textContent='Tab '+cfg.tabPpm;
+  document.getElementById('page-title-kon').textContent='Tab '+cfg.tabKon;
+  document.getElementById('scc-dv3-name').textContent=cfg.tabDv3;
+  document.getElementById('scc-ppm-name').textContent=cfg.tabPpm;
+  document.getElementById('scc-kon-name').textContent=cfg.tabKon;
+  document.getElementById('scc-dv3-name2').textContent=cfg.tabDv3;
+  document.getElementById('scc-ppm-name2').textContent=cfg.tabPpm;
+  document.getElementById('scc-kon-name2').textContent=cfg.tabKon;
+  const s=document.getElementById('st-app-title'); if(s) s.value=cfg.appTitle;
+  const sd=document.getElementById('st-dv3'); if(sd) sd.value=cfg.tabDv3;
+  const sp=document.getElementById('st-ppm'); if(sp) sp.value=cfg.tabPpm;
+  const sk=document.getElementById('st-kon'); if(sk) sk.value=cfg.tabKon;
+}
+
+// ══════════════════════════════════════════════════
+// CLEAR DATA
+// ══════════════════════════════════════════════════
+function clearData(type){
+  if(!confirm(`Padam SEMUA data ${type.toUpperCase()} dari sistem tempatan? (Google Sheets tidak terjejas)`)) return;
+  db[type]=[];
+  save();
+  renderUpdatePage();
+  toast(`Data ${type.toUpperCase()} dipadam dari sistem tempatan.`,'info');
+  if(type==='dv3') renderDv3();
+  if(type==='ppm') renderPpm();
+  if(type==='kontraktor') renderKon();
+  if(currentPage==='dashboard') renderDashboard();
+}
+
+// ══════════════════════════════════════════════════
+// SAMPLE DATA
+// ══════════════════════════════════════════════════
+function loadSampleData(){
+  db.dv3=[
+    {tahun:'2024',penyenggara:'Ahmad Faizal',takSiap:5,siap:42},
+    {tahun:'2024',penyenggara:'Mohd Rizal',takSiap:3,siap:38},
+    {tahun:'2024',penyenggara:'Siti Norzahra',takSiap:7,siap:31},
+    {tahun:'2024',penyenggara:'Hafizuddin',takSiap:2,siap:45},
+    {tahun:'2024',penyenggara:'Azizul Hakim',takSiap:9,siap:27},
+    {tahun:'2023',penyenggara:'Ahmad Faizal',takSiap:8,siap:35},
+    {tahun:'2023',penyenggara:'Mohd Rizal',takSiap:6,siap:30},
+    {tahun:'2023',penyenggara:'Siti Norzahra',takSiap:4,siap:28},
+    {tahun:'2025',penyenggara:'Ahmad Faizal',takSiap:2,siap:48},
+    {tahun:'2025',penyenggara:'Mohd Rizal',takSiap:1,siap:52},
+    {tahun:'2025',penyenggara:'Hafizuddin',takSiap:3,siap:41},
+  ];
+  db.ppm=[
+    {bulan:'Januari',tahun:'2024',penyenggara:'Ahmad Faizal',takSiap:1,siap:18},
+    {bulan:'Februari',tahun:'2024',penyenggara:'Ahmad Faizal',takSiap:0,siap:20},
+    {bulan:'Mac',tahun:'2024',penyenggara:'Mohd Rizal',takSiap:2,siap:16},
+    {bulan:'April',tahun:'2024',penyenggara:'Mohd Rizal',takSiap:1,siap:19},
+    {bulan:'Mei',tahun:'2024',penyenggara:'Siti Norzahra',takSiap:3,siap:14},
+    {bulan:'Jun',tahun:'2024',penyenggara:'Siti Norzahra',takSiap:2,siap:17},
+    {bulan:'Julai',tahun:'2024',penyenggara:'Hafizuddin',takSiap:0,siap:22},
+    {bulan:'Ogos',tahun:'2024',penyenggara:'Hafizuddin',takSiap:1,siap:21},
+    {bulan:'September',tahun:'2024',penyenggara:'Azizul Hakim',takSiap:4,siap:13},
+    {bulan:'Oktober',tahun:'2024',penyenggara:'Ahmad Faizal',takSiap:1,siap:20},
+    {bulan:'November',tahun:'2024',penyenggara:'Mohd Rizal',takSiap:2,siap:18},
+    {bulan:'Disember',tahun:'2024',penyenggara:'Siti Norzahra',takSiap:1,siap:19},
+    {bulan:'Januari',tahun:'2025',penyenggara:'Ahmad Faizal',takSiap:0,siap:24},
+    {bulan:'Februari',tahun:'2025',penyenggara:'Mohd Rizal',takSiap:1,siap:22},
+  ];
+  db.kontraktor=[
+    {bulan:'Januari',tahun:'2024',kontraktor:'Syarikat Elektrik Maju',zon:'Zon A',jumlahDoket:25,jumlahRm:18500},
+    {bulan:'Februari',tahun:'2024',kontraktor:'Syarikat Elektrik Maju',zon:'Zon A',jumlahDoket:22,jumlahRm:16200},
+    {bulan:'Mac',tahun:'2024',kontraktor:'Teknik Jaya Sdn Bhd',zon:'Zon B',jumlahDoket:18,jumlahRm:13800},
+    {bulan:'April',tahun:'2024',kontraktor:'Teknik Jaya Sdn Bhd',zon:'Zon B',jumlahDoket:20,jumlahRm:15000},
+    {bulan:'Mei',tahun:'2024',kontraktor:'Projek Moden Sdn Bhd',zon:'Zon C',jumlahDoket:15,jumlahRm:11500},
+    {bulan:'Jun',tahun:'2024',kontraktor:'Projek Moden Sdn Bhd',zon:'Zon C',jumlahDoket:17,jumlahRm:12800},
+    {bulan:'Julai',tahun:'2024',kontraktor:'Syarikat Elektrik Maju',zon:'Zon A',jumlahDoket:28,jumlahRm:21000},
+    {bulan:'Ogos',tahun:'2024',kontraktor:'Bina Cergas Sdn Bhd',zon:'Zon D',jumlahDoket:12,jumlahRm:9200},
+    {bulan:'September',tahun:'2024',kontraktor:'Bina Cergas Sdn Bhd',zon:'Zon D',jumlahDoket:14,jumlahRm:10500},
+    {bulan:'Oktober',tahun:'2024',kontraktor:'Teknik Jaya Sdn Bhd',zon:'Zon B',jumlahDoket:19,jumlahRm:14300},
+    {bulan:'November',tahun:'2024',kontraktor:'Projek Moden Sdn Bhd',zon:'Zon C',jumlahDoket:16,jumlahRm:12000},
+    {bulan:'Disember',tahun:'2024',kontraktor:'Syarikat Elektrik Maju',zon:'Zon A',jumlahDoket:30,jumlahRm:22500},
+    {bulan:'Januari',tahun:'2025',kontraktor:'Teknik Jaya Sdn Bhd',zon:'Zon B',jumlahDoket:21,jumlahRm:15800},
+    {bulan:'Februari',tahun:'2025',kontraktor:'Bina Cergas Sdn Bhd',zon:'Zon D',jumlahDoket:16,jumlahRm:12200},
+  ];
+  save();
+  refreshAll();
+  toast('Data contoh dimuatkan!','success');
+}
+
+// ══════════════════════════════════════════════════
+// COPY APPS SCRIPT
+// ══════════════════════════════════════════════════
+function copyAppsScript(){
+  const code=`const SPREADSHEET_ID = 'GANTIKAN_DENGAN_ID_SPREADSHEET_ANDA';
+
+function doGet(e) {
+  const sheet = e.parameter.sheet || 'DV3';
+  const action = e.parameter.action || 'read';
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const ws = ss.getSheetByName(sheet);
+  if (!ws) return json({error: 'Sheet tidak wujud: ' + sheet});
+
+  if (action === 'read') {
+    const data = ws.getDataRange().getValues();
+    const headers = data[0];
+    const rows = data.slice(1).map((r, i) => {
+      const obj = {_row: i + 2};
+      headers.forEach((h, j) => obj[h] = r[j]);
+      return obj;
+    });
+    return json({success: true, data: rows});
+  }
+  return json({error: 'Action tidak dikenali'});
+}
+
+function doPost(e) {
+  const payload = JSON.parse(e.postData.contents);
+  const {sheet, action, data, rowNum} = payload;
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const ws = ss.getSheetByName(sheet);
+  if (!ws) return json({error: 'Sheet tidak wujud'});
+
+  if (action === 'append') {
+    const headers = ws.getRange(1, 1, 1, ws.getLastColumn()).getValues()[0];
+    const row = headers.map(h => data[h] !== undefined ? data[h] : '');
+    ws.appendRow(row);
+    const newRow = ws.getLastRow();
+    return json({success: true, rowNum: newRow});
+  }
+
+  if (action === 'update') {
+    const headers = ws.getRange(1, 1, 1, ws.getLastColumn()).getValues()[0];
+    const row = headers.map(h => data[h] !== undefined ? data[h] : '');
+    ws.getRange(rowNum, 1, 1, row.length).setValues([row]);
+    return json({success: true});
+  }
+
+  if (action === 'delete') {
+    ws.deleteRow(rowNum);
+    return json({success: true});
+  }
+
+  return json({error: 'Action tidak dikenali'});
+}
+
+function json(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}`;
+  navigator.clipboard.writeText(code).then(()=>toast('Kod Apps Script disalin!','success')).catch(()=>toast('Sila salin kod dari kotak panduan','info'));
+}
+
+// ══════════════════════════════════════════════════
+// REFRESH
+// ══════════════════════════════════════════════════
+function refreshAll(){
+  if(currentPage==='dashboard') renderDashboard();
+  if(currentPage==='dv3') renderDv3();
+  if(currentPage==='ppm') renderPpm();
+  if(currentPage==='kontraktor') renderKon();
+  if(currentPage==='update') renderUpdatePage();
+}
+function refreshCharts(){refreshAll();}
+
+// ══════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded',()=>{
+  load();
+  applySettings();
+  updateSyncStatus();
+  renderDashboard();
+  renderUpdatePage();
+  if(cfg.autoSync) startAutoSync();
+});
+</script>
+</body>
+</html>
